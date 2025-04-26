@@ -37,11 +37,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="chart-tooltip">
-        <p className="font-semibold">{formatDate(data.date)}</p>
-        <p className="text-sm">Recovery: <span className="font-semibold">{data.recovery}%</span></p>
-        <p className="text-sm">Strain: <span className="font-semibold">{data.actualStrain.toFixed(1)}</span></p>
-        <p className="text-sm">Target: <span className="font-semibold">{data.strainTarget.min}-{data.strainTarget.max}</span></p>
+      <div className="bg-whoop-black p-3 border border-whoop-white/10 rounded-md shadow-lg">
+        <p className="font-sans uppercase tracking-whoop text-whoop-white mb-1">{formatDate(data.date)}</p>
+        <p className="text-sm text-whoop-white/70">Recovery: <span className="font-din font-bold text-whoop-white">{data.recovery}%</span></p>
+        <p className="text-sm text-whoop-white/70">Strain: <span className="font-din font-bold text-whoop-white">{data.actualStrain.toFixed(1)}</span></p>
+        <p className="text-sm text-whoop-white/70">Target: <span className="font-din font-bold text-whoop-white">{data.strainTarget.min}-{data.strainTarget.max}</span></p>
       </div>
     );
   }
@@ -50,40 +50,47 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const StrainChart: React.FC<StrainChartProps> = ({ data }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
+    <Card className="bg-transparent border-0 shadow-none">
+      <CardHeader className="px-6 pt-6 pb-2">
+        <CardTitle className="flex justify-between items-center uppercase tracking-whoop text-whoop-white">
           <span>7-Day Strain vs. Recovery</span>
         </CardTitle>
+        <p className="text-xs text-whoop-white/50 mt-1">Data by WHOOP</p>
       </CardHeader>
-      <CardContent className="pt-2">
+      <CardContent className="p-2">
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#666" strokeOpacity={0.2} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#444" strokeOpacity={0.3} />
               <XAxis 
                 dataKey="date" 
                 tickFormatter={formatDate}
-                tick={{ fontSize: 12 }}
-                stroke="#888"
+                tick={{ fontSize: 12, fill: "#FFFFFF99" }}
+                stroke="#FFFFFF33"
               />
               <YAxis 
                 yAxisId="left" 
                 domain={[0, 21]} 
-                tick={{ fontSize: 12 }}
-                stroke="#888"
-                label={{ value: 'Strain', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#888', fontSize: 12 } }}
+                tick={{ fontSize: 12, fill: "#FFFFFF99" }}
+                stroke="#FFFFFF33"
+                label={{ value: 'STRAIN', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#FFFFFF99', fontSize: 12, fontFamily: 'Proxima Nova, sans-serif', letterSpacing: '0.1em' } }}
               />
               <YAxis 
                 yAxisId="right" 
                 orientation="right" 
                 domain={[0, 100]} 
-                tick={{ fontSize: 12 }}
-                stroke="#888"
-                label={{ value: 'Recovery %', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: '#888', fontSize: 12 } }}
+                tick={{ fontSize: 12, fill: "#FFFFFF99" }}
+                stroke="#FFFFFF33"
+                label={{ value: 'RECOVERY %', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: '#FFFFFF99', fontSize: 12, fontFamily: 'Proxima Nova, sans-serif', letterSpacing: '0.1em' } }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="top" height={36} />
+              <Legend 
+                verticalAlign="top" 
+                height={36} 
+                formatter={(value) => {
+                  return <span className="text-xs uppercase tracking-whoop text-whoop-white/70">{value}</span>
+                }}
+              />
               {data.map((item, index) => (
                 <ReferenceLine
                   key={`target-${index}`}
@@ -92,7 +99,13 @@ const StrainChart: React.FC<StrainChartProps> = ({ data }) => {
                     { x: item.date, y: item.strainTarget.min },
                     { x: item.date, y: item.strainTarget.max }
                   ]}
-                  stroke="#888"
+                  stroke={
+                    item.recoveryZone === 'green' 
+                      ? '#16EC06' 
+                      : item.recoveryZone === 'yellow' 
+                        ? '#FFDE00' 
+                        : '#FF0026'
+                  }
                   strokeDasharray="3 3"
                   strokeWidth={2}
                 />
@@ -101,7 +114,7 @@ const StrainChart: React.FC<StrainChartProps> = ({ data }) => {
                 yAxisId="left" 
                 dataKey="actualStrain" 
                 name="Actual Strain"
-                fill="#1A1F2C" 
+                fill="#0093E7" 
                 radius={[4, 4, 0, 0]} 
               />
               <Line 
@@ -109,9 +122,9 @@ const StrainChart: React.FC<StrainChartProps> = ({ data }) => {
                 type="monotone" 
                 dataKey="recovery" 
                 name="Recovery %" 
-                stroke="#8884d8" 
+                stroke="#FFFFFF" 
                 strokeWidth={2} 
-                dot={{ fill: '#8884d8', r: 4 }} 
+                dot={{ fill: '#FFFFFF', r: 4, strokeWidth: 0 }} 
               />
             </ComposedChart>
           </ResponsiveContainer>

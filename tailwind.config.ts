@@ -68,11 +68,27 @@ export default {
           ring: 'hsl(var(--sidebar-ring))'
         },
         whoop: {
-          blue: '#1A1F2C',
-          green: '#4CAF50',
-          yellow: '#FFC107',
-          red: '#FF5252',
+          'black': '#000000',
+          'white': '#FFFFFF',
+          'teal': '#00F19F',
+          'blue': '#0093E7',
+          'recovery-high': '#16EC06',
+          'recovery-med': '#FFDE00',
+          'recovery-low': '#FF0026',
+          'sleep-blue': '#7BA1BB',
+          'gradient-start': '#283339',
+          'gradient-end': '#101518'
         }
+      },
+      fontFamily: {
+        'sans': ['Proxima Nova', 'system-ui', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        'din': ['DIN Pro', 'system-ui', 'Helvetica Neue', 'Arial', 'sans-serif'],
+      },
+      backgroundImage: {
+        'whoop-gradient': 'linear-gradient(to bottom, #283339, #101518)',
+      },
+      letterSpacing: {
+        'whoop': '0.1em',
       },
       borderRadius: {
         lg: 'var(--radius)',

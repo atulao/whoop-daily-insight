@@ -8,10 +8,12 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-whoop-gradient">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-6 bg-gradient-to-b from-background to-background/90">
-        {children}
+      <main className="flex-1 overflow-auto p-6">
+        <div className="whoop-attribution">
+          {children}
+        </div>
       </main>
     </div>
   );

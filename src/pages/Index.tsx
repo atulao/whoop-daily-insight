@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import RecoveryCard from "@/components/dashboard/RecoveryCard";
@@ -29,9 +30,9 @@ const Dashboard = () => {
       <MainLayout>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
-            <div className="animate-pulse-glow w-16 h-16 bg-whoop-blue rounded-full mx-auto mb-4"></div>
-            <h2 className="text-2xl font-semibold mb-2 text-foreground">Loading your insights...</h2>
-            <p className="text-muted-foreground">Analyzing your recovery and performance data</p>
+            <div className="animate-pulse-glow w-16 h-16 bg-whoop-teal rounded-full mx-auto mb-4"></div>
+            <h2 className="text-2xl font-bold uppercase tracking-whoop text-whoop-white mb-2">Loading your insights...</h2>
+            <p className="text-whoop-white/70">Analyzing your recovery and performance data</p>
           </div>
         </div>
       </MainLayout>
@@ -43,8 +44,8 @@ const Dashboard = () => {
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <header className="flex items-center justify-between py-8">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground mb-2">Daily Insights</h1>
-            <p className="text-xl text-muted-foreground">
+            <h1 className="text-3xl font-bold uppercase tracking-whoop text-whoop-white mb-2">Daily Insights</h1>
+            <p className="text-lg text-whoop-white/70">
               {new Date().toLocaleDateString(undefined, { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -69,16 +70,16 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-card rounded-lg border shadow-sm">
+          <div className="bg-whoop-black/80 backdrop-blur-sm border border-whoop-blue/20 rounded-lg shadow-sm">
             <HrvTimeline data={weeklyData} />
           </div>
-          <div className="bg-card rounded-lg border shadow-sm">
+          <div className="bg-whoop-black/80 backdrop-blur-sm border border-whoop-blue/20 rounded-lg shadow-sm">
             <StrainChart data={weeklyData} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-card rounded-lg border shadow-sm">
+          <div className="bg-whoop-black/80 backdrop-blur-sm border border-whoop-sleep-blue/20 rounded-lg shadow-sm">
             <SleepConsistency sleepData={sleepData} />
           </div>
         </div>
