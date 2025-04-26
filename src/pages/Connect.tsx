@@ -3,20 +3,24 @@ import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { WhoopLoginForm } from '@/components/whoop/WhoopLoginForm';
 import { useWhoopAuth } from '@/contexts/WhoopAuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { whoopService } from '@/services/whoopService';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const Connect = () => {
   const { isLoading, refreshUser } = useWhoopAuth();
   const [clientId, setClientId] = useState(whoopService.getClientId() || '');
   const [showSettings, setShowSettings] = useState(
-    whoopService.getClientId() === 'whoop-client-id-placeholder'
+    whoopService.getClientId() === 'whoop-client-id-placeholder' || !whoopService.getClientId()
   );
   const { toast } = useToast();
+
+  // Get the current URL to display
+  const redirectUri = window.location.origin + '/connect';
 
   const handleSaveClientId = () => {
     if (clientId && clientId.trim() !== '') {
@@ -36,6 +40,11 @@ const Connect = () => {
     }
   };
 
+  // Check if we have an error in the URL (from OAuth callback)
+  const urlParams = new URLSearchParams(window.location.search);
+  const oauthError = urlParams.get('error');
+  const oauthErrorDescription = urlParams.get('error_description');
+  
   return (
     <MainLayout>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -56,6 +65,21 @@ const Connect = () => {
             {showSettings ? "Hide Settings" : "Configure API"}
           </Button>
         </header>
+
+        {oauthError && (
+          <Alert variant="destructive" className="bg-whoop-black border-whoop-recovery-low/50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>OAuth Error: {oauthError}</AlertTitle>
+            <AlertDescription>
+              {oauthErrorDescription || "An error occurred during authentication."}
+              {oauthError === 'invalid_client' && (
+                <p className="mt-2">
+                  This usually means your Client ID is incorrect or not properly configured in the WHOOP Developer Portal.
+                </p>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid grid-cols-1 gap-8">
           {showSettings && (
@@ -81,6 +105,34 @@ const Connect = () => {
                     />
                     <p className="text-xs text-whoop-white/50 mt-1">
                       You can get this from the WHOOP Developer Portal by creating a new application
+                    </p>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <label className="text-sm font-medium text-whoop-white/70 block mb-1">
+                      Redirect URI (for WHOOP Developer Portal)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        readOnly
+                        value={redirectUri}
+                        className="bg-black/30 border-whoop-white/20 text-whoop-white"
+                      />
+                      <Button
+                        onClick={() => {
+                          navigator.clipboard.writeText(redirectUri);
+                          toast({
+                            title: "Copied to clipboard",
+                            description: "Redirect URI copied to clipboard",
+                          });
+                        }}
+                        className="whitespace-nowrap"
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                    <p className="text-xs text-whoop-white/50 mt-1">
+                      Use this exact URL in your WHOOP Developer Portal under "Redirect URIs"
                     </p>
                   </div>
                 </div>
