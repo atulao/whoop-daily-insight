@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -101,5 +100,31 @@
   
   .chart-tooltip {
     @apply bg-background/90 border border-border rounded-md shadow-lg p-2 text-sm;
+  }
+}
+
+@layer components {
+  .card {
+    @apply transition-all duration-300 hover:shadow-lg hover:border-primary/20;
+  }
+
+  .metric-card {
+    @apply bg-card rounded-lg border p-6 transition-all duration-300 hover:shadow-lg hover:border-primary/20;
+  }
+
+  .animate-value {
+    @apply transition-all duration-500;
+    animation: value-change 0.5s ease-out;
+  }
+}
+
+@keyframes value-change {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
