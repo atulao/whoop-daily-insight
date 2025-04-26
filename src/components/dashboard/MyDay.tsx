@@ -10,9 +10,27 @@ interface MyDayProps {
 
 const MyDay: React.FC<MyDayProps> = ({ latestSleep }) => {
   
-  const sleepDuration = latestSleep?.qualityDuration ? "FormattedDur" : "--:--";
-  const sleepTime = "--:--";
-  const wakeTime = "--:--";
+  // Format the sleep duration
+  const formatDuration = (milliseconds: number) => {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+  };
+  
+  // Format time from date string
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
+  // Get sleep duration from the stage summary
+  const sleepDuration = latestSleep?.score?.stage_summary?.total_in_bed_time_milli
+    ? formatDuration(latestSleep.score.stage_summary.total_in_bed_time_milli)
+    : "--:--";
+    
+  // Get sleep and wake times
+  const sleepTime = latestSleep?.start ? formatTime(latestSleep.start) : "--:--";
+  const wakeTime = latestSleep?.end ? formatTime(latestSleep.end) : "--:--";
 
   return (
     <Card className="bg-whoop-black/80 backdrop-blur-sm border-whoop-white/10">

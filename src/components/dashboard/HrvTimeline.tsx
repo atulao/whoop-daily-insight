@@ -1,13 +1,10 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { WhoopRecovery } from "@/services/whoopService";
 
 interface HrvTimelineProps {
-  data: Array<{
-    date: string;
-    hrv: number;
-  }>;
+  data: WhoopRecovery[] | null | undefined;
 }
 
 const HrvTimeline: React.FC<HrvTimelineProps> = ({ data }) => {
@@ -15,6 +12,16 @@ const HrvTimeline: React.FC<HrvTimelineProps> = ({ data }) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { weekday: 'short' });
   };
+
+  // Transform data for chart display
+  const chartData = React.useMemo(() => {
+    if (!data) return [];
+    
+    return data.map(recovery => ({
+      date: recovery.created_at,
+      hrv: recovery.score?.hrv_rmssd_milli ?? 0
+    })).filter(item => item.hrv > 0);
+  }, [data]);
 
   return (
     <Card className="bg-whoop-black/80 backdrop-blur-sm border-whoop-white/10">
@@ -27,7 +34,7 @@ const HrvTimeline: React.FC<HrvTimelineProps> = ({ data }) => {
       <CardContent className="p-2">
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
+            <LineChart data={chartData}>
               <XAxis 
                 dataKey="date" 
                 tickFormatter={formatDate}
@@ -39,7 +46,7 @@ const HrvTimeline: React.FC<HrvTimelineProps> = ({ data }) => {
                 tick={{ fill: "#FFFFFF99", fontSize: 12 }}
                 tickFormatter={(value) => `${value}ms`}
               />
-              <Tooltip
+              <Tooltip 
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     return (

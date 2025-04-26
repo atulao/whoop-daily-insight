@@ -19,12 +19,10 @@ const DailyOverview: React.FC<DailyOverviewProps> = ({
     return 'text-whoop-recovery-low';
   };
 
-  const recoveryScore = latestRecovery?.score ?? 0;
-  const strainScore = latestStrain?.score ?? 0;
-  const sleepPerformance = latestSleep?.qualityDuration && latestSleep?.sleepNeed 
-                           ? Math.round((latestSleep.qualityDuration / latestSleep.sleepNeed) * 100)
-                           : 0;
-  const hrv = latestRecovery?.hrvMs ?? 0;
+  const recoveryScore = latestRecovery?.score?.recovery_score ?? 0;
+  const strainScore = latestStrain?.score?.strain ?? 0;
+  const sleepPerformance = latestSleep?.score?.sleep_performance_percentage ?? 0;
+  const hrv = latestRecovery?.score?.hrv_rmssd_milli ?? 0;
 
   return (
     <Card className="bg-whoop-black/80 backdrop-blur-sm border-whoop-white/10">
@@ -40,7 +38,7 @@ const DailyOverview: React.FC<DailyOverviewProps> = ({
 
         <div className="text-center">
           <p className="font-din text-4xl font-bold text-whoop-blue mb-1">
-            {strainScore.toFixed(1)}
+            {typeof strainScore === 'number' ? strainScore.toFixed(1) : '--'}
           </p>
           <p className="font-sans text-sm uppercase tracking-whoop text-whoop-white/70">
             Strain
@@ -49,7 +47,7 @@ const DailyOverview: React.FC<DailyOverviewProps> = ({
 
         <div className="text-center">
           <p className="font-din text-4xl font-bold text-whoop-white mb-1">
-            {sleepPerformance > 0 ? `${sleepPerformance}%` : '--'}
+            {sleepPerformance > 0 ? `${Math.round(sleepPerformance)}%` : '--'}
           </p>
           <p className="font-sans text-sm uppercase tracking-whoop text-whoop-white/70">
             Sleep Performance
@@ -58,7 +56,7 @@ const DailyOverview: React.FC<DailyOverviewProps> = ({
 
         <div className="text-center">
           <p className="font-din text-4xl font-bold text-whoop-white mb-1">
-            {hrv}
+            {hrv ? Math.round(hrv) : '--'}
           </p>
           <p className="font-sans text-sm uppercase tracking-whoop text-whoop-white/70">
             HRV

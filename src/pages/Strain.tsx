@@ -33,8 +33,8 @@ const Strain = () => {
   const latestStrain = strainData?.[strainData.length - 1];
   const latestRecovery = recoveryData?.[recoveryData.length - 1];
 
-  const strainValue = latestStrain?.score?.toFixed(1) ?? "--";
-  const recoveryScore = latestRecovery?.score ?? 0;
+  const strainValue = latestStrain?.score?.strain ? latestStrain.score.strain.toFixed(1) : "--";
+  const recoveryScore = latestRecovery?.score?.recovery_score ?? 0;
   const recoveryValue = recoveryScore > 0 ? `${recoveryScore}%` : "--";
 
   const getRecoveryColorClass = (score: number) => {
@@ -49,7 +49,7 @@ const Strain = () => {
       icon: <Zap className="h-5 w-5 text-whoop-blue" />,
       label: "DAY STRAIN",
       value: strainValue,
-      description: latestStrain?.score ? (latestStrain.score > 14 ? "High activity" : "Moderate activity") : "No data"
+      description: latestStrain?.score?.strain ? (latestStrain.score.strain > 14 ? "High activity" : "Moderate activity") : "No data"
     },
     {
       icon: <Heart className={cn("h-5 w-5", recoveryColorClass)} />,

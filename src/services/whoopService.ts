@@ -4,43 +4,90 @@ import axios from 'axios';
 const WHOOP_API_BASE_URL = 'https://api.prod.whoop.com/developer';
 const WHOOP_AUTH_URL = 'https://api.prod.whoop.com/oauth/oauth2/auth';
 const WHOOP_TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token';
+// Define the proxy paths
+const PROXIED_WHOOP_TOKEN_URL = '/oauth-proxy/oauth/oauth2/token';
+const PROXIED_WHOOP_API_BASE_URL = '/oauth-proxy/developer';
 
 // Types for WHOOP API responses
 export interface WhoopUser {
-  id: string;
-  firstName: string;
-  lastName: string;
+  user_id: string;
   email: string;
+  first_name: string;
+  last_name: string;
 }
 
 export interface WhoopRecovery {
-  score: number;
-  restingHeartRate: number;
-  hrvMs: number;
-  date: string;
+  cycle_id: number;
+  sleep_id: number;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+  score_state: string;
+  score?: {
+    user_calibrating: boolean;
+    recovery_score: number;
+    resting_heart_rate: number;
+    hrv_rmssd_milli: number;
+    spo2_percentage?: number;
+    skin_temp_celsius?: number;
+  };
 }
 
 export interface WhoopStrain {
-  score: number;
-  averageHeartRate: number;
-  maxHeartRate: number;
-  kilojoules: number;
-  date: string;
+  id: number;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+  start: string;
+  end: string;
+  timezone_offset: string;
+  score_state: string;
+  score?: {
+    strain: number;
+    kilojoule: number;
+    average_heart_rate: number;
+    max_heart_rate: number;
+  };
 }
 
 export interface WhoopSleep {
   id: string;
-  state: string;
-  scoreState: string;
-  qualityDuration: number;
-  respiratoryRate: number;
-  sleepNeed: number;
-  date: string;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+  start: string;
+  end: string;
+  timezone_offset: string;
+  nap: boolean;
+  score_state: string;
+  score?: {
+    stage_summary: {
+      total_in_bed_time_milli: number;
+      total_awake_time_milli: number;
+      total_no_data_time_milli: number;
+      total_light_sleep_time_milli: number;
+      total_slow_wave_sleep_time_milli: number;
+      total_rem_sleep_time_milli: number;
+      sleep_cycle_count: number;
+      disturbance_count: number;
+    };
+    sleep_needed: {
+      baseline_milli: number;
+      need_from_sleep_debt_milli: number;
+      need_from_recent_strain_milli: number;
+      need_from_recent_nap_milli: number;
+    };
+    respiratory_rate: number;
+    sleep_performance_percentage: number;
+    sleep_consistency_percentage: number;
+    sleep_efficiency_percentage: number;
+  };
 }
 
 // Configuration and authentication
 export interface WhoopConfig {
   clientId: string;
+  clientSecret: string;
   redirectUri: string;
 }
 
@@ -52,14 +99,36 @@ export interface WhoopAuthState {
 }
 
 // Store config in localStorage keys
-const CLIENT_ID_KEY = 'whoopConfig_clientId';
+// const CLIENT_ID_KEY = 'whoopConfig_clientId'; // No longer needed
 
-// Function to load config from localStorage
-function loadConfigFromLocalStorage(): WhoopConfig {
-  const clientId = localStorage.getItem(CLIENT_ID_KEY) || 'whoop-client-id-placeholder';
+// Function to load config from environment variables
+function loadConfigFromEnv(): WhoopConfig {
+  const clientId = import.meta.env.VITE_WHOOP_CLIENT_ID;
+  const clientSecret = import.meta.env.VITE_WHOOP_CLIENT_SECRET;
+  
+  if (!clientId || clientId === 'your_actual_whoop_client_id_here' || clientId === 'whoop-client-id-placeholder') {
+    // Add a check or warning if the env var isn't set properly
+    console.warn(
+      'WARNING: VITE_WHOOP_CLIENT_ID is not set correctly in your .env file. \n' + 
+      'Please create a .env file in the project root and add VITE_WHOOP_CLIENT_ID=your_client_id.'
+    );
+  }
+  
+  if (!clientSecret) {
+    console.warn(
+      'WARNING: VITE_WHOOP_CLIENT_SECRET is not set in your .env file. \n' + 
+      'Please add VITE_WHOOP_CLIENT_SECRET=your_client_secret to your .env file.'
+    );
+  }
+  
+  // Log the redirect URI being used
+  const redirectUri = typeof window !== 'undefined' ? window.location.origin + '/connect' : 'http://localhost:8080/connect';
+  console.log('[DEBUG] Using redirect URI:', redirectUri);
+  
   return {
-    clientId: clientId,
-    redirectUri: window.location.origin + '/connect',
+    clientId: clientId || 'env-error-placeholder',
+    clientSecret: clientSecret || '',
+    redirectUri,
   };
 }
 
@@ -75,8 +144,8 @@ export class WhoopService {
     isAuthenticated: false
   };
 
-  constructor() { // Remove default config parameter
-    this.config = loadConfigFromLocalStorage(); // Load from localStorage
+  constructor() {
+    this.config = loadConfigFromEnv(); // Load from environment
     this.loadAuthStateFromLocalStorage();
   }
 
@@ -106,21 +175,6 @@ export class WhoopService {
   // Get authentication status
   public isAuthenticated(): boolean {
     return this.authState.isAuthenticated;
-  }
-
-  // Allow setting client ID at runtime
-  public setClientId(clientId: string): boolean {
-    if (clientId && clientId.trim() !== '') {
-      this.config.clientId = clientId.trim();
-      localStorage.setItem(CLIENT_ID_KEY, this.config.clientId); // Save to localStorage
-      return true;
-    }
-    return false;
-  }
-
-  // Get the current client ID
-  public getClientId(): string {
-    return this.config.clientId;
   }
 
   // Generate a random string for PKCE
@@ -161,8 +215,12 @@ export class WhoopService {
 
   // Get login URL with PKCE
   public async getLoginUrl(): Promise<string> {
-    if (!this.config.clientId || this.config.clientId === 'whoop-client-id-placeholder') {
-      throw new Error('WHOOP Client ID not configured. Please set a valid client ID.');
+    // Check if the clientId indicates it hasn't been set correctly
+    if (!this.config.clientId || this.config.clientId === 'env-error-placeholder') {
+      throw new Error(
+        'WHOOP Client ID not configured. ' + 
+        'Please set VITE_WHOOP_CLIENT_ID in your .env file and restart the development server.'
+      );
     }
     
     const { codeChallenge, state } = await this.generatePKCEChallenge();
@@ -189,17 +247,52 @@ export class WhoopService {
 
     // Verify state parameter to prevent CSRF
     if (!storedState || !returnedState || storedState !== returnedState) {
-      throw new Error('Invalid state parameter');
+        console.error('[ERROR] Invalid state parameter during auth callback.');
+        console.error('[DEBUG] Stored state:', storedState);
+        console.error('[DEBUG] Returned state:', returnedState);
+        // Clean up potentially compromised PKCE values
+        localStorage.removeItem('pkce_verifier');
+        localStorage.removeItem('pkce_state');
+        throw new Error('Invalid state parameter');
     }
 
     try {
-      const response = await axios.post(WHOOP_TOKEN_URL, {
-        client_id: this.config.clientId,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: this.config.redirectUri,
-        code_verifier: storedVerifier
-      });
+      // --- Format data as x-www-form-urlencoded --- 
+      const params = new URLSearchParams();
+      params.append('client_id', this.config.clientId);
+      params.append('client_secret', this.config.clientSecret);
+      params.append('grant_type', 'authorization_code');
+      params.append('code', code);
+      params.append('redirect_uri', this.config.redirectUri);
+      params.append('code_verifier', storedVerifier || ''); // Ensure non-null
+      
+      // --- Add enhanced logging --- 
+      console.log('[DEBUG] Token exchange attempt details:');
+      console.log('[DEBUG] Client ID:', this.config.clientId);
+      console.log('[DEBUG] Client Secret provided:', !!this.config.clientSecret);
+      console.log('[DEBUG] Grant type: authorization_code');
+      console.log('[DEBUG] Code length:', code.length);
+      console.log('[DEBUG] Redirect URI:', this.config.redirectUri);
+      console.log('[DEBUG] Code verifier length:', (storedVerifier || '').length);
+      console.log('[DEBUG] Proxy URL:', PROXIED_WHOOP_TOKEN_URL);
+      console.log('[DEBUG] Full params being sent:', params.toString().replace(this.config.clientSecret, '[REDACTED]'));
+      // --- End enhanced logging --- 
+
+      const response = await axios.post(
+        // --- Use PROXIED URL --- 
+        PROXIED_WHOOP_TOKEN_URL, 
+        // --- End change --- 
+        params, 
+        { // Explicitly set Content-Type header
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      );
+
+      // --- Log successful response ---
+      console.log('[DEBUG] Token exchange successful. Response:', response.status);
+      // --- End logging ---
 
       this.authState = {
         isAuthenticated: true,
@@ -216,7 +309,20 @@ export class WhoopService {
       
       return true;
     } catch (error) {
-      console.error('Failed to authenticate with WHOOP:', error);
+      // --- Add enhanced error logging for error response data --- 
+      if (axios.isAxiosError(error)) {
+        console.error('[ERROR] Axios error during token exchange:');
+        console.error('  Status:', error.response?.status);
+        console.error('  Data:', JSON.stringify(error.response?.data, null, 2));
+        console.error('  Headers:', JSON.stringify(error.response?.headers, null, 2));
+        
+        // Check if CORS is the issue
+        if (error.message.includes('CORS')) {
+          console.error('[ERROR] CORS error detected. Make sure the proxy is set up correctly in vite.config.ts.');
+        }
+      }
+      // --- End enhanced logging --- 
+      console.error('[ERROR] Failed to authenticate with WHOOP:', error);
       // Clean up PKCE values even on failure
       localStorage.removeItem('pkce_verifier');
       localStorage.removeItem('pkce_state');
@@ -233,11 +339,15 @@ export class WhoopService {
     }
 
     try {
-      const response = await axios.post(WHOOP_TOKEN_URL, {
-        grant_type: 'refresh_token',
-        refresh_token: this.authState.refreshToken,
-        client_id: this.config.clientId, // Client ID might be required by WHOOP
-      });
+      // --- Format data as x-www-form-urlencoded --- 
+      const params = new URLSearchParams();
+      params.append('grant_type', 'refresh_token');
+      params.append('refresh_token', this.authState.refreshToken);
+      params.append('client_id', this.config.clientId);
+      params.append('client_secret', this.config.clientSecret);
+
+      const response = await axios.post(PROXIED_WHOOP_TOKEN_URL, params);
+      // --- End change --- 
 
       this.authState = {
         ...this.authState,
@@ -279,7 +389,8 @@ export class WhoopService {
     }
 
     try {
-      const response = await axios.get(`${WHOOP_API_BASE_URL}${endpoint}`, {
+      console.log(`[DEBUG] Making API request to: ${PROXIED_WHOOP_API_BASE_URL}${endpoint}`);
+      const response = await axios.get(`${PROXIED_WHOOP_API_BASE_URL}${endpoint}`, {
         headers: { 
           'Authorization': `Bearer ${this.authState.accessToken}` 
         }
@@ -294,7 +405,7 @@ export class WhoopService {
           await this.refreshToken();
           // Retry the original request with the new token
           console.log('Retrying API request after refresh...');
-          const retryResponse = await axios.get(`${WHOOP_API_BASE_URL}${endpoint}`, {
+          const retryResponse = await axios.get(`${PROXIED_WHOOP_API_BASE_URL}${endpoint}`, {
             headers: { 
               'Authorization': `Bearer ${this.authState.accessToken}` 
             }
@@ -312,7 +423,7 @@ export class WhoopService {
 
   // Get user profile
   public async getProfile(): Promise<WhoopUser> {
-    return this.apiRequest<WhoopUser>('/v1/user/profile');
+    return this.apiRequest<WhoopUser>('/v1/user/profile/basic');
   }
 
   // Get recent recovery data
@@ -321,10 +432,12 @@ export class WhoopService {
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - days);
     
-    const start = startDate.toISOString().split('T')[0];
-    const end = endDate.toISOString().split('T')[0];
+    const start = startDate.toISOString();
+    const end = endDate.toISOString();
     
-    return this.apiRequest<WhoopRecovery[]>(`/v1/recovery?start=${start}&end=${end}`);
+    // Call the recovery collection endpoint
+    const response = await this.apiRequest<{records: WhoopRecovery[]}>(`/v1/recovery?start=${start}&end=${end}`);
+    return response.records || [];
   }
 
   // Get recent strain data
@@ -333,10 +446,12 @@ export class WhoopService {
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - days);
     
-    const start = startDate.toISOString().split('T')[0];
-    const end = endDate.toISOString().split('T')[0];
+    const start = startDate.toISOString();
+    const end = endDate.toISOString();
     
-    return this.apiRequest<WhoopStrain[]>(`/v1/cycle?start=${start}&end=${end}`);
+    // Call the cycle collection endpoint
+    const response = await this.apiRequest<{records: WhoopStrain[]}>(`/v1/cycle?start=${start}&end=${end}`);
+    return response.records || [];
   }
 
   // Get recent sleep data
@@ -345,10 +460,12 @@ export class WhoopService {
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - days);
     
-    const start = startDate.toISOString().split('T')[0];
-    const end = endDate.toISOString().split('T')[0];
+    const start = startDate.toISOString();
+    const end = endDate.toISOString();
     
-    return this.apiRequest<WhoopSleep[]>(`/v1/sleep?start=${start}&end=${end}`);
+    // Call the sleep collection endpoint
+    const response = await this.apiRequest<{records: WhoopSleep[]}>(`/v1/activity/sleep?start=${start}&end=${end}`);
+    return response.records || [];
   }
 }
 

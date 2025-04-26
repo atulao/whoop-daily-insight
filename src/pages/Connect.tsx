@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { WhoopLoginForm } from '@/components/whoop/WhoopLoginForm';
 import { useWhoopAuth } from '@/contexts/WhoopAuthContext';
 import { Loader2, AlertCircle, ExternalLink, Copy, CheckIcon, InfoIcon } from 'lucide-react';
-import { whoopService } from '@/services/whoopService';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,45 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const Connect = () => {
-  const { isLoading, refreshUser } = useWhoopAuth();
-  const initialClientId = whoopService.getClientId();
-  const [showSettings, setShowSettings] = useState(
-    initialClientId === 'whoop-client-id-placeholder' 
-  );
+  const { isLoading } = useWhoopAuth();
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const { toast } = useToast();
 
-  // Get the current URL to display
   const redirectUri = window.location.origin + '/connect';
-  
-  // Generate a privacy policy URL (placeholder)
   const privacyPolicyUrl = window.location.origin + '/privacy';
-
-  const handleSaveClientId = (newClientId: string) => {
-    if (newClientId && newClientId.trim() !== '') {
-      const success = whoopService.setClientId(newClientId);
-      if (success) {
-        toast({
-          title: "Client ID saved",
-          description: "Your WHOOP Client ID has been saved successfully.",
-        });
-        setShowSettings(false);
-      } else {
-        toast({
-          title: "Failed to save Client ID",
-          description: "An unexpected error occurred.",
-          variant: "destructive"
-        });
-      }
-    } else {
-      toast({
-        title: "Invalid Client ID",
-        description: "Please enter a valid WHOOP Client ID.",
-        variant: "destructive"
-      });
-    }
-  };
-
+  
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setIsCopied(true);
@@ -61,12 +29,16 @@ const Connect = () => {
     });
     setTimeout(() => setIsCopied(false), 2000);
   };
-
-  // Check if we have an error in the URL (from OAuth callback)
-  const urlParams = new URLSearchParams(window.location.search);
-  const oauthError = urlParams.get('error');
-  const oauthErrorDescription = urlParams.get('error_description');
   
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const [oauthErrorDescription, setOauthErrorDescription] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setOauthError(urlParams.get('error'));
+    setOauthErrorDescription(urlParams.get('error_description'));
+  }, []);
+
   return (
     <MainLayout>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -80,11 +52,11 @@ const Connect = () => {
             </p>
           </div>
           <Button
-            onClick={() => setShowSettings(!showSettings)}
+            onClick={() => setShowSetupGuide(!showSetupGuide)}
             variant="secondary"
             className="bg-transparent text-whoop-white border-whoop-white/20 hover:bg-white/10"
           >
-            {showSettings ? "Hide Settings" : "Configure API"}
+            {showSetupGuide ? "Hide Setup Guide" : "Show Setup Guide"}
           </Button>
         </header>
 
@@ -105,19 +77,18 @@ const Connect = () => {
         )}
 
         <div className="grid grid-cols-1 gap-8">
-          {showSettings && (
+          {showSetupGuide && (
             <Card className="bg-whoop-black/80 backdrop-blur-sm border border-whoop-white/10 rounded-lg shadow-lg overflow-hidden">
               <CardHeader className="border-b border-whoop-white/10">
-                <CardTitle className="text-whoop-white">WHOOP API Configuration</CardTitle>
+                <CardTitle className="text-whoop-white">WHOOP Developer Setup Guide</CardTitle>
                 <CardDescription className="text-whoop-white/70">
-                  Enter your WHOOP Client ID from the WHOOP Developer Portal
+                  Follow these steps in the WHOOP Developer Portal before connecting.
                 </CardDescription>
               </CardHeader>
               
               <Tabs defaultValue="setup" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 bg-black/30">
-                  <TabsTrigger value="setup" className="text-whoop-white">Setup Guide</TabsTrigger>
-                  <TabsTrigger value="config" className="text-whoop-white">Configuration</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 bg-black/30">
+                  <TabsTrigger value="setup" className="text-whoop-white">Setup Steps</TabsTrigger>
                   <TabsTrigger value="scopes" className="text-whoop-white">OAuth Scopes</TabsTrigger>
                 </TabsList>
                 
@@ -222,22 +193,15 @@ const Connect = () => {
                       </div>
                       
                       <div className="mt-6 text-whoop-white/80">
-                        <p>After creating the app, you'll receive a <strong>Client ID</strong> to use in the Configuration tab.</p>
+                        <p>After creating the app, ensure the **Redirect URL** is exactly: 
+                          <code className="bg-black/50 px-2 py-0.5 rounded mx-1">{redirectUri}</code>
+                        </p>
+                        <p className="mt-2">The application uses the **Client ID** configured via environment variables.</p>
                       </div>
                     </div>
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="config" className="p-6">
-                  <ConfigForm 
-                    initialClientId={initialClientId} 
-                    onSave={handleSaveClientId} 
-                    redirectUri={redirectUri} 
-                    copyToClipboard={copyToClipboard}
-                    isCopied={isCopied}
-                  />
-                </TabsContent>
-
                 <TabsContent value="scopes" className="p-6">
                   <div className="space-y-6">
                     <Alert variant="outline" className="bg-black/30 border-whoop-white/20">
@@ -282,15 +246,6 @@ const Connect = () => {
                   </div>
                 </TabsContent>
               </Tabs>
-              
-              <CardFooter className="border-t border-whoop-white/10 pt-4 pb-4">
-                <Button
-                  onClick={() => setShowSettings(false)}
-                  className="bg-whoop-teal text-whoop-black hover:brightness-110"
-                >
-                  Save Client ID
-                </Button>
-              </CardFooter>
             </Card>
           )}
 
@@ -338,75 +293,6 @@ const Connect = () => {
         </div>
       </div>
     </MainLayout>
-  );
-};
-
-// --- Extract Config Form Component --- 
-interface ConfigFormProps {
-  initialClientId: string;
-  onSave: (clientId: string) => void;
-  redirectUri: string;
-  copyToClipboard: (text: string) => void;
-  isCopied: boolean;
-}
-
-const ConfigForm: React.FC<ConfigFormProps> = ({ 
-  initialClientId,
-  onSave,
-  redirectUri,
-  copyToClipboard,
-  isCopied
-}) => {
-  const [currentClientId, setCurrentClientId] = useState(initialClientId);
-
-  const handleSave = () => {
-    onSave(currentClientId);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <label htmlFor="client-id" className="text-sm font-medium text-whoop-white/70 block mb-1">
-          Client ID
-        </label>
-        <Input
-          id="client-id"
-          placeholder="Enter your WHOOP Client ID"
-          value={currentClientId === 'whoop-client-id-placeholder' ? '' : currentClientId}
-          onChange={(e) => setCurrentClientId(e.target.value)}
-          className="bg-black/30 border-whoop-white/20 text-whoop-white"
-        />
-        <p className="text-xs text-whoop-white/50 mt-1">
-          You can get this from the WHOOP Developer Portal after creating an application
-        </p>
-      </div>
-      
-      <div className="mt-4">
-        <label className="text-sm font-medium text-whoop-white/70 block mb-1">
-          Redirect URI (for WHOOP Developer Portal)
-        </label>
-        <div className="flex items-center gap-2">
-          <Input
-            readOnly
-            value={redirectUri}
-            className="bg-black/30 border-whoop-white/20 text-whoop-white"
-          />
-          <Button size="sm" variant="secondary" onClick={() => copyToClipboard(redirectUri)} 
-            className="bg-transparent border-whoop-white/20">
-            {isCopied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          </Button>
-        </div>
-        <p className="text-xs text-whoop-white/50 mt-1">
-          Copy this exactly into your WHOOP App's Redirect URL field.
-        </p>
-      </div>
-      
-      <div className="flex justify-end mt-6">
-          <Button onClick={handleSave} className="bg-whoop-teal text-whoop-dark-blue hover:bg-whoop-teal/80">
-            Save Client ID
-          </Button>
-      </div>
-    </div>
   );
 };
 

@@ -1,37 +1,46 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import DailyOverview from "@/components/dashboard/DailyOverview";
 import MyDay from "@/components/dashboard/MyDay";
 import WeeklyOverview from "@/components/dashboard/WeeklyOverview";
 import StrainChart from "@/components/dashboard/StrainChart";
 import HrvTimeline from "@/components/dashboard/HrvTimeline";
-import { getTodayData, generateWeeklyData, generateSleepData } from "@/services/mockData";
+import { whoopService } from "@/services/whoopService";
+import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
-  const [todayData, setTodayData] = useState<any>(null);
-  const [weeklyData, setWeeklyData] = useState<any[]>([]);
-  const [sleepData, setSleepData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: profileData, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ["whoopProfile"],
+    queryFn: () => whoopService.getProfile(),
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTodayData(getTodayData());
-      setWeeklyData(generateWeeklyData());
-      setSleepData(generateSleepData());
-      setLoading(false);
-    }, 1000);
+  const { data: recoveryData, isLoading: isLoadingRecovery } = useQuery({
+    queryKey: ["whoopRecovery"],
+    queryFn: () => whoopService.getRecovery(7),
+    enabled: !!profileData,
+  });
 
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: strainData, isLoading: isLoadingStrain } = useQuery({
+    queryKey: ["whoopStrain"],
+    queryFn: () => whoopService.getStrain(7),
+    enabled: !!profileData,
+  });
+
+  const { data: sleepData, isLoading: isLoadingSleep } = useQuery({
+    queryKey: ["whoopSleep"],
+    queryFn: () => whoopService.getSleep(7),
+    enabled: !!profileData,
+  });
 
   const isLoading = isLoadingProfile || isLoadingRecovery || isLoadingStrain || isLoadingSleep;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center h-screen">
           <div className="text-center">
-            <div className="animate-pulse-glow w-16 h-16 bg-whoop-teal rounded-full mx-auto mb-4"></div>
+            <Loader2 className="h-16 w-16 animate-spin text-whoop-teal mx-auto mb-4" />
             <h2 className="text-2xl font-bold uppercase tracking-whoop text-whoop-white mb-2">Loading your insights...</h2>
             <p className="text-whoop-white/70">Analyzing your recovery and performance data</p>
           </div>
@@ -48,7 +57,9 @@ const Dashboard = () => {
     <MainLayout>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="py-6">
-          <h1 className="text-2xl font-bold uppercase tracking-whoop text-whoop-white mb-2">Overview</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-whoop text-whoop-white mb-2">
+            Overview {profileData?.first_name ? `- ${profileData.first_name}` : ''}
+          </h1>
           <p className="text-sm text-whoop-white/70">
             {new Date().toLocaleDateString(undefined, { 
               weekday: 'long', 
@@ -75,10 +86,7 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <StrainChart strainData={strainData} recoveryData={recoveryData} />
-            <HrvTimeline data={recoveryData?.map(day => ({
-              date: day.date,
-              hrv: day.hrvMs
-            })) || []} />
+            <HrvTimeline data={recoveryData} />
           </div>
 
           <WeeklyOverview recoveryData={recoveryData} strainData={strainData} sleepData={sleepData} />

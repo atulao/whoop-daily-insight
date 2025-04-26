@@ -3,27 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bed } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface SleepData {
-  date: string;
-  sleepStart: string;
-  wakeTime: string;
-  duration: number;
-  efficiency: number;
-  consistency: 'consistent' | 'inconsistent';
-}
+import { WhoopSleep } from "@/services/whoopService";
 
 interface SleepConsistencyProps {
-  sleepData: SleepData[];
+  sleepData: WhoopSleep[];
 }
 
 const SleepConsistency: React.FC<SleepConsistencyProps> = ({ sleepData }) => {
   // Calculate median sleep start time
-  const calculateMedianTime = (timeArray: string[]) => {
+  const calculateMedianTime = (timeArray: (string | undefined)[]) => {
+    // Filter out undefined and empty strings
+    const validTimes = timeArray.filter(time => time);
+    
+    if (validTimes.length === 0) return "--:--";
+    
     // Convert times to minutes since midnight
-    const minutesArray = timeArray.map(time => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return hours * 60 + minutes;
+    const minutesArray = validTimes.map(time => {
+      const date = new Date(time as string);
+      return date.getHours() * 60 + date.getMinutes();
     });
     
     // Sort the minutes
@@ -42,19 +39,25 @@ const SleepConsistency: React.FC<SleepConsistencyProps> = ({ sleepData }) => {
   };
   
   // Get last 7 days of sleep data
-  const recentSleepData = sleepData.slice(-7);
+  const recentSleepData = sleepData.slice(-7).filter(sleep => sleep && sleep.start && sleep.end);
   
   // Calculate median sleep start time
-  const medianSleepStart = calculateMedianTime(recentSleepData.map(d => d.sleepStart));
+  const medianSleepStart = calculateMedianTime(recentSleepData.map(d => d.start));
   
   // Calculate median wake time
-  const medianWakeTime = calculateMedianTime(recentSleepData.map(d => d.wakeTime));
+  const medianWakeTime = calculateMedianTime(recentSleepData.map(d => d.end));
+  
+  // Determine consistency based on sleep_consistency_percentage
+  const getSleepConsistency = (sleep: WhoopSleep): 'consistent' | 'inconsistent' => {
+    const consistencyScore = sleep.score?.sleep_consistency_percentage ?? 0;
+    return consistencyScore >= 70 ? 'consistent' : 'inconsistent';
+  };
   
   // Calculate consistency streak
   const calculateStreak = () => {
     let streak = 0;
     for (let i = sleepData.length - 1; i >= 0; i--) {
-      if (sleepData[i].consistency === 'consistent') {
+      if (getSleepConsistency(sleepData[i]) === 'consistent') {
         streak++;
       } else {
         break;
@@ -91,37 +94,40 @@ const SleepConsistency: React.FC<SleepConsistencyProps> = ({ sleepData }) => {
           </div>
         </div>
         
-        <div>
-          <h3 className="text-sm font-medium mb-3">Recent Sleep Pattern</h3>
-          <div className="overflow-x-auto">
-            <div className="flex gap-2 min-w-max">
-              {recentSleepData.map((day) => (
+        <h3 className="text-sm font-medium mb-3">Recent Sleep Pattern</h3>
+        <div className="overflow-x-auto">
+          <div className="flex gap-2 min-w-max">
+            {recentSleepData.map((day) => {
+              const consistency = getSleepConsistency(day);
+              const sleepDate = day.start ? new Date(day.start) : new Date();
+              
+              return (
                 <div 
-                  key={day.date}
+                  key={day.id}
                   className="flex flex-col items-center"
                 >
                   <div className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                    day.consistency === 'consistent' 
+                    consistency === 'consistent' 
                       ? 'bg-whoop-green text-white' 
                       : 'bg-whoop-red text-white'
                   )}>
-                    {new Date(day.date).getDate()}
+                    {sleepDate.getDate()}
                   </div>
                   <span className="text-xs mt-1.5 text-muted-foreground">
-                    {new Date(day.date).toLocaleDateString(undefined, { weekday: 'short' })}
+                    {sleepDate.toLocaleDateString(undefined, { weekday: 'short' })}
                   </span>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
+        </div>
           
-          <div className="mt-6 text-sm text-muted-foreground border-t pt-4">
-            <p>
-              Sticking to a consistent sleep schedule helps optimize your recovery.
-              Aim to go to bed within ±30 minutes of your target bedtime.
-            </p>
-          </div>
+        <div className="mt-6 text-sm text-muted-foreground border-t pt-4">
+          <p>
+            Sticking to a consistent sleep schedule helps optimize your recovery.
+            Aim to go to bed within ±30 minutes of your target bedtime.
+          </p>
         </div>
       </CardContent>
     </Card>

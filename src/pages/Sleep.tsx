@@ -25,11 +25,22 @@ const Sleep = () => {
 
   const latestSleep = sleepData?.[sleepData.length - 1];
   
-  const sleepScore = latestSleep?.qualityDuration && latestSleep?.sleepNeed 
-                      ? Math.round((latestSleep.qualityDuration / latestSleep.sleepNeed) * 100)
-                      : 0;
-  const timeInBed = latestSleep?.qualityDuration ? formatDuration(latestSleep.qualityDuration) : "--:--";
-  const wakeTime = "--:--";
+  const sleepScore = latestSleep?.score?.sleep_performance_percentage
+    ? Math.round(latestSleep.score.sleep_performance_percentage) : 0;
+    
+  const timeInBed = latestSleep?.score?.stage_summary?.total_in_bed_time_milli 
+    ? formatDuration(latestSleep.score.stage_summary.total_in_bed_time_milli / 1000) : "--:--";
+    
+  const sleepNeeded = latestSleep?.score?.sleep_needed
+    ? formatDuration((
+        latestSleep.score.sleep_needed.baseline_milli + 
+        latestSleep.score.sleep_needed.need_from_sleep_debt_milli + 
+        latestSleep.score.sleep_needed.need_from_recent_strain_milli + 
+        latestSleep.score.sleep_needed.need_from_recent_nap_milli
+      ) / 1000) : '--:--';
+      
+  const wakeTime = latestSleep?.end 
+    ? formatTime(new Date(latestSleep.end)) : "--:--";
 
   const sleepMetrics = [
     {
@@ -42,13 +53,15 @@ const Sleep = () => {
       icon: <Bed className="h-5 w-5 text-whoop-sleep-blue" />,
       label: "TIME IN BED",
       value: timeInBed,
-      description: `Need: ${latestSleep?.sleepNeed ? formatDuration(latestSleep.sleepNeed) : '--'}`
+      description: `Need: ${sleepNeeded}`
     },
     {
       icon: <Sunrise className="h-5 w-5 text-whoop-sleep-blue" />,
       label: "WAKE TIME",
       value: wakeTime,
-      description: "Consistency N/A"
+      description: latestSleep?.score?.sleep_consistency_percentage 
+                  ? `${Math.round(latestSleep.score.sleep_consistency_percentage)}% consistent` 
+                  : "Consistency N/A"
     }
   ];
 

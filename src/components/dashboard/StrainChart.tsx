@@ -68,18 +68,48 @@ const StrainChart: React.FC<StrainChartProps> = ({ strainData, recoveryData }) =
   const combinedData: CombinedDataPoint[] = React.useMemo(() => {
     if (!strainData || !recoveryData) return [];
     
-    const recoveryMap = new Map(recoveryData.map(item => [item.date, item]));
+    // Create a map of dates to recovery data for easy lookup
+    const recoveryMap = new Map();
+    recoveryData.forEach(item => {
+      // Use created_at as recovery data doesn't have start property
+      if (item && item.created_at && typeof item.created_at === 'string') {
+        try {
+          const date = item.created_at.split('T')[0]; // Just use the date part
+          recoveryMap.set(date, item);
+        } catch (error) {
+          console.error("Error processing recovery data:", error);
+        }
+      }
+    });
 
-    return strainData.map(strainItem => {
-      const recoveryItem = recoveryMap.get(strainItem.date);
-      const recoveryScore = recoveryItem?.score ?? 0;
-      return {
-        date: strainItem.date,
-        actualStrain: strainItem.score,
-        recovery: recoveryScore,
-        recoveryZone: getRecoveryZone(recoveryScore),
-      };
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Ensure sorted by date
+    // Process and return valid strain data
+    return strainData
+      .filter(item => item && item.start && typeof item.start === 'string')
+      .map(strainItem => {
+        try {
+          const date = strainItem.start.split('T')[0];
+          const recoveryItem = recoveryMap.get(date);
+          const recoveryScore = recoveryItem?.score?.recovery_score ?? 0;
+          
+          return {
+            date: date,
+            actualStrain: strainItem.score?.strain ?? 0,
+            recovery: recoveryScore,
+            recoveryZone: getRecoveryZone(recoveryScore),
+          };
+        } catch (error) {
+          console.error("Error processing strain data:", error);
+          // Return a placeholder object if error occurs
+          return {
+            date: "",
+            actualStrain: 0,
+            recovery: 0,
+            recoveryZone: 'red' as const
+          };
+        }
+      })
+      .filter(item => item.date) // Filter out items with empty dates (from error handling)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Ensure sorted by date
 
   }, [strainData, recoveryData]);
 
@@ -144,7 +174,7 @@ const StrainChart: React.FC<StrainChartProps> = ({ strainData, recoveryData }) =
                   const { cx, cy, payload } = props;
                   const zone = (payload as CombinedDataPoint).recoveryZone;
                   const color = zone === 'green' ? '#16EC06' : zone === 'yellow' ? '#FFDE00' : '#FF0026';
-                  return <circle cx={cx} cy={cy} r={4} fill={color} strokeWidth={0} />;
+                  return <circle key={`dot-${payload.date}-${cx}-${cy}`} cx={cx} cy={cy} r={4} fill={color} strokeWidth={0} />;
                 }}
                 activeDot={{ r: 6 }}
               />

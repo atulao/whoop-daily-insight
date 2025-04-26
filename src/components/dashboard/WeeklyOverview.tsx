@@ -11,31 +11,43 @@ interface WeeklyOverviewProps {
 
 const calculateAverage = (data: any[] | null | undefined, key: string): number => {
   if (!data || data.length === 0) return 0;
-  const total = data.reduce((acc, curr) => acc + (curr?.[key] || 0), 0);
-  return total / data.length;
+  
+  if (key.includes('.')) {
+    const [parent, child] = key.split('.');
+    const validItems = data.filter(item => item?.[parent]?.[child] !== undefined);
+    if (validItems.length === 0) return 0;
+    
+    const total = validItems.reduce((acc, curr) => acc + curr[parent][child], 0);
+    return total / validItems.length;
+  }
+  
+  const validItems = data.filter(item => item?.[key] !== undefined);
+  if (validItems.length === 0) return 0;
+  
+  const total = validItems.reduce((acc, curr) => acc + curr[key], 0);
+  return total / validItems.length;
 };
 
 const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ recoveryData, strainData, sleepData }) => {
-  const avgRecovery = Math.round(calculateAverage(recoveryData, 'score'));
-  const avgStrain = parseFloat(calculateAverage(strainData, 'score').toFixed(1));
-  const avgSleepSeconds = calculateAverage(sleepData, 'qualityDuration');
-  const avgSleepHours = parseFloat((avgSleepSeconds / 3600).toFixed(1));
+  const avgRecovery = Math.round(calculateAverage(recoveryData, 'score.recovery_score'));
+  const avgStrain = parseFloat(calculateAverage(strainData, 'score.strain').toFixed(1));
+  const avgSleepPerformance = Math.round(calculateAverage(sleepData, 'score.sleep_performance_percentage'));
 
   const metrics = [
     { 
       label: "Avg Recovery", 
-      value: avgRecovery,
+      value: avgRecovery || 0,
       unit: "%"
     },
     { 
       label: "Avg Strain", 
-      value: avgStrain,
+      value: avgStrain || 0,
       unit: ""
     },
     { 
-      label: "Avg Sleep", 
-      value: avgSleepHours,
-      unit: " hrs"
+      label: "Avg Sleep Performance", 
+      value: avgSleepPerformance || 0,
+      unit: "%"
     }
   ];
 
