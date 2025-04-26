@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 // WHOOP API constants
@@ -60,7 +59,12 @@ const whoopConfig: WhoopConfig = {
   redirectUri: window.location.origin + '/connect', // This should match what's registered in WHOOP Developer Portal
 };
 
-// Main WHOOP service class
+interface PKCEChallenge {
+  codeVerifier: string;
+  codeChallenge: string;
+  state: string;
+}
+
 export class WhoopService {
   private config: WhoopConfig;
   private authState: WhoopAuthState = {
@@ -110,30 +114,82 @@ export class WhoopService {
     return this.config.clientId;
   }
 
-  // Get login URL
-  public getLoginUrl(): string {
+  // Generate a random string for PKCE
+  private generateRandomString(length: number): string {
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const values = crypto.getRandomValues(new Uint8Array(length));
+    return Array.from(values).map(x => possible[x % possible.length]).join('');
+  }
+
+  // Generate SHA-256 hash
+  private async sha256(plain: string): Promise<ArrayBuffer> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plain);
+    return crypto.subtle.digest('SHA-256', data);
+  }
+
+  // Base64URL encode
+  private base64URLEncode(buffer: ArrayBuffer): string {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
+
+  // Generate PKCE challenge
+  private async generatePKCEChallenge(): Promise<PKCEChallenge> {
+    const codeVerifier = this.generateRandomString(128);
+    const state = this.generateRandomString(32);
+    const hashed = await this.sha256(codeVerifier);
+    const codeChallenge = this.base64URLEncode(hashed);
+    
+    // Store PKCE values in localStorage
+    localStorage.setItem('pkce_verifier', codeVerifier);
+    localStorage.setItem('pkce_state', state);
+    
+    return { codeVerifier, codeChallenge, state };
+  }
+
+  // Get login URL with PKCE
+  public async getLoginUrl(): Promise<string> {
     if (!this.config.clientId || this.config.clientId === 'whoop-client-id-placeholder') {
       throw new Error('WHOOP Client ID not configured. Please set a valid client ID.');
     }
+    
+    const { codeChallenge, state } = await this.generatePKCEChallenge();
     
     const params = new URLSearchParams({
       client_id: this.config.clientId,
       redirect_uri: this.config.redirectUri,
       response_type: 'code',
       scope: 'read:profile read:recovery read:cycles read:workout read:sleep',
+      code_challenge_method: 'S256',
+      code_challenge: codeChallenge,
+      state: state
     });
 
     return `${WHOOP_AUTH_URL}?${params.toString()}`;
   }
 
-  // Handle authentication callback
+  // Handle authentication callback with PKCE verification
   public async handleAuthCallback(code: string): Promise<boolean> {
+    const storedVerifier = localStorage.getItem('pkce_verifier');
+    const storedState = localStorage.getItem('pkce_state');
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnedState = urlParams.get('state');
+
+    // Verify state parameter to prevent CSRF
+    if (!storedState || !returnedState || storedState !== returnedState) {
+      throw new Error('Invalid state parameter');
+    }
+
     try {
       const response = await axios.post(WHOOP_TOKEN_URL, {
         client_id: this.config.clientId,
         grant_type: 'authorization_code',
         code,
         redirect_uri: this.config.redirectUri,
+        code_verifier: storedVerifier
       });
 
       this.authState = {
@@ -144,6 +200,11 @@ export class WhoopService {
       };
 
       this.saveAuthStateToLocalStorage();
+      
+      // Clean up PKCE values
+      localStorage.removeItem('pkce_verifier');
+      localStorage.removeItem('pkce_state');
+      
       return true;
     } catch (error) {
       console.error('Failed to authenticate with WHOOP:', error);

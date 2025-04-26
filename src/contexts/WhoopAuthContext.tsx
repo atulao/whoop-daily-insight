@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { whoopService, WhoopUser } from '@/services/whoopService';
 import { useToast } from '@/hooks/use-toast';
@@ -84,9 +83,9 @@ export const WhoopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const login = () => {
+  const login = async () => {
     try {
-      const loginUrl = whoopService.getLoginUrl();
+      const loginUrl = await whoopService.getLoginUrl();
       window.location.href = loginUrl;
     } catch (error) {
       console.error('Login error:', error);

@@ -9,12 +9,16 @@ export const WhoopLoginForm: React.FC = () => {
   const { isAuthenticated, isLoading, user, login, logout } = useWhoopAuth();
   const clientIdConfigured = whoopService.getClientId() !== 'whoop-client-id-placeholder' && whoopService.getClientId() !== '';
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!clientIdConfigured) {
       alert('Please configure your WHOOP Client ID first');
       return;
     }
-    login();
+    try {
+      await login();
+    } catch (error) {
+      console.error('Login error:', error);
+    }
   };
 
   return (
