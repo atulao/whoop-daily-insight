@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { WhoopLoginForm } from '@/components/whoop/WhoopLoginForm';
 import { useWhoopAuth } from '@/contexts/WhoopAuthContext';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, ExternalLink, Copy, CheckIcon } from 'lucide-react';
 import { whoopService } from '@/services/whoopService';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Connect = () => {
   const { isLoading, refreshUser } = useWhoopAuth();
@@ -17,10 +18,14 @@ const Connect = () => {
   const [showSettings, setShowSettings] = useState(
     whoopService.getClientId() === 'whoop-client-id-placeholder' || !whoopService.getClientId()
   );
+  const [isCopied, setIsCopied] = useState(false);
   const { toast } = useToast();
 
   // Get the current URL to display
   const redirectUri = window.location.origin + '/connect';
+  
+  // Generate a privacy policy URL (placeholder)
+  const privacyPolicyUrl = window.location.origin + '/privacy';
 
   const handleSaveClientId = () => {
     if (clientId && clientId.trim() !== '') {
@@ -38,6 +43,16 @@ const Connect = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    toast({
+      title: "Copied to clipboard",
+      description: "Text copied to clipboard successfully",
+    });
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   // Check if we have an error in the URL (from OAuth callback)
@@ -75,6 +90,7 @@ const Connect = () => {
               {oauthError === 'invalid_client' && (
                 <p className="mt-2">
                   This usually means your Client ID is incorrect or not properly configured in the WHOOP Developer Portal.
+                  Make sure the redirect URI matches exactly: <code className="bg-black/30 px-2 py-0.5 rounded">{redirectUri}</code>
                 </p>
               )}
             </AlertDescription>
@@ -90,54 +106,161 @@ const Connect = () => {
                   Enter your WHOOP Client ID from the WHOOP Developer Portal
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="client-id" className="text-sm font-medium text-whoop-white/70 block mb-1">
-                      Client ID
-                    </label>
-                    <Input
-                      id="client-id"
-                      placeholder="Enter your WHOOP Client ID"
-                      value={clientId}
-                      onChange={(e) => setClientId(e.target.value)}
-                      className="bg-black/30 border-whoop-white/20 text-whoop-white"
-                    />
-                    <p className="text-xs text-whoop-white/50 mt-1">
-                      You can get this from the WHOOP Developer Portal by creating a new application
-                    </p>
+              
+              <Tabs defaultValue="setup" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-black/30">
+                  <TabsTrigger value="setup" className="text-whoop-white">Setup Guide</TabsTrigger>
+                  <TabsTrigger value="config" className="text-whoop-white">Configuration</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="setup" className="p-6">
+                  <div className="space-y-6">
+                    <div className="rounded-md bg-black/30 p-4">
+                      <h3 className="font-semibold text-lg text-whoop-white mb-2">WHOOP Developer Portal Setup</h3>
+                      <ol className="list-decimal list-inside space-y-3 text-whoop-white/80">
+                        <li>Go to the <a href="https://developer.whoop.com" target="_blank" rel="noopener noreferrer" className="text-whoop-teal hover:underline inline-flex items-center">
+                          WHOOP Developer Portal <ExternalLink className="h-3 w-3 ml-1" />
+                        </a></li>
+                        <li>Sign in and navigate to "Apps" section</li>
+                        <li>Click "Create New App"</li>
+                        <li>Fill in the required fields:</li>
+                      </ol>
+                      
+                      <div className="mt-4 ml-6 space-y-4">
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <p className="text-sm font-medium text-whoop-white">App Name</p>
+                            <p className="text-xs text-whoop-white/50">Required</p>
+                          </div>
+                          <p className="text-sm text-whoop-white/70">Choose any name (e.g., "WHOOP Daily Insights")</p>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <p className="text-sm font-medium text-whoop-white">Logo</p>
+                            <p className="text-xs text-whoop-white/50">Required</p>
+                          </div>
+                          <p className="text-sm text-whoop-white/70">Upload a 1:1 ratio image (JPG or PNG)</p>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <p className="text-sm font-medium text-whoop-white">Contact Email</p>
+                            <p className="text-xs text-whoop-white/50">Required</p>
+                          </div>
+                          <p className="text-sm text-whoop-white/70">Your email address</p>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <p className="text-sm font-medium text-whoop-white">Privacy Policy URL</p>
+                            <p className="text-xs text-whoop-white/50">Required</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <code className="bg-black/30 text-xs px-2 py-1 rounded text-whoop-white/80 flex-1">{privacyPolicyUrl}</code>
+                            <Button size="sm" variant="outline" onClick={() => copyToClipboard(privacyPolicyUrl)} 
+                              className="bg-transparent border-whoop-white/20">
+                              {isCopied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-whoop-white/50 mt-1">
+                            You can use this or create your own privacy policy page
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <p className="text-sm font-medium text-whoop-white">Redirect URL</p>
+                            <p className="text-xs text-whoop-white/50">Required</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <code className="bg-black/30 text-xs px-2 py-1 rounded text-whoop-white/80 flex-1">{redirectUri}</code>
+                            <Button size="sm" variant="outline" onClick={() => copyToClipboard(redirectUri)} 
+                              className="bg-transparent border-whoop-white/20">
+                              {isCopied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-whoop-white/50 mt-1">
+                            This must match EXACTLY - copy and paste to avoid errors
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <p className="text-sm font-medium text-whoop-white">Scopes</p>
+                            <p className="text-xs text-whoop-white/50">Required</p>
+                          </div>
+                          <p className="text-sm text-whoop-white/70">Select at least:</p>
+                          <ul className="list-disc list-inside text-xs text-whoop-white/70 mt-1 space-y-1">
+                            <li>read:profile</li>
+                            <li>read:recovery</li>
+                            <li>read:cycles</li>
+                            <li>read:sleep</li>
+                            <li>read:workout</li>
+                          </ul>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <p className="text-sm font-medium text-whoop-white">Webhook URL</p>
+                            <p className="text-xs text-whoop-white/50">Optional</p>
+                          </div>
+                          <p className="text-sm text-whoop-white/70">Leave blank for now (can add later)</p>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6 text-whoop-white/80">
+                        <p>After creating the app, you'll receive a <strong>Client ID</strong> to use in the Configuration tab.</p>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="mt-4">
-                    <label className="text-sm font-medium text-whoop-white/70 block mb-1">
-                      Redirect URI (for WHOOP Developer Portal)
-                    </label>
-                    <div className="flex items-center gap-2">
+                </TabsContent>
+                
+                <TabsContent value="config" className="p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="client-id" className="text-sm font-medium text-whoop-white/70 block mb-1">
+                        Client ID
+                      </label>
                       <Input
-                        readOnly
-                        value={redirectUri}
+                        id="client-id"
+                        placeholder="Enter your WHOOP Client ID"
+                        value={clientId}
+                        onChange={(e) => setClientId(e.target.value)}
                         className="bg-black/30 border-whoop-white/20 text-whoop-white"
                       />
-                      <Button
-                        onClick={() => {
-                          navigator.clipboard.writeText(redirectUri);
-                          toast({
-                            title: "Copied to clipboard",
-                            description: "Redirect URI copied to clipboard",
-                          });
-                        }}
-                        className="whitespace-nowrap"
-                      >
-                        Copy
-                      </Button>
+                      <p className="text-xs text-whoop-white/50 mt-1">
+                        You can get this from the WHOOP Developer Portal after creating an application
+                      </p>
                     </div>
-                    <p className="text-xs text-whoop-white/50 mt-1">
-                      Use this exact URL in your WHOOP Developer Portal under "Redirect URIs"
-                    </p>
+                    
+                    <div className="mt-4">
+                      <label className="text-sm font-medium text-whoop-white/70 block mb-1">
+                        Redirect URI (for WHOOP Developer Portal)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          readOnly
+                          value={redirectUri}
+                          className="bg-black/30 border-whoop-white/20 text-whoop-white"
+                        />
+                        <Button
+                          onClick={() => copyToClipboard(redirectUri)}
+                          className="whitespace-nowrap"
+                        >
+                          {isCopied ? <CheckIcon className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copy
+                        </Button>
+                      </div>
+                      <p className="text-xs text-whoop-white/50 mt-1">
+                        Use this exact URL in your WHOOP Developer Portal under "Redirect URIs"
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-              <CardFooter className="border-t border-whoop-white/10 pt-4">
+                </TabsContent>
+              </Tabs>
+              
+              <CardFooter className="border-t border-whoop-white/10 pt-4 pb-4">
                 <Button
                   onClick={handleSaveClientId}
                   className="bg-whoop-teal text-whoop-black hover:brightness-110"
