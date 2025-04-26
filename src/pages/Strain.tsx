@@ -10,17 +10,26 @@ const Strain = () => {
   const weeklyData = generateWeeklyData();
   const todayStrain = weeklyData[weeklyData.length - 1];
 
+  // Add default values in case properties are undefined
+  const strainValue = todayStrain && todayStrain.strain !== undefined 
+    ? todayStrain.strain.toFixed(1) 
+    : "0.0";
+
+  const recoveryValue = todayStrain && todayStrain.recovery !== undefined
+    ? `${todayStrain.recovery}%`
+    : "0%";
+
   const strainMetrics = [
     {
       icon: <Zap className="h-5 w-5" />,
       label: "Day Strain",
-      value: todayStrain.strain.toFixed(1),
+      value: strainValue,
       description: "Moderate activity"
     },
     {
       icon: <Heart className="h-5 w-5" />,
       label: "Recovery",
-      value: `${todayStrain.recovery}%`,
+      value: recoveryValue,
       description: "Good recovery state"
     },
     {
