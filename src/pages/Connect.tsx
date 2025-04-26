@@ -1,12 +1,40 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { WhoopLoginForm } from '@/components/whoop/WhoopLoginForm';
 import { useWhoopAuth } from '@/contexts/WhoopAuthContext';
 import { Loader2 } from 'lucide-react';
+import { whoopService } from '@/services/whoopService';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const Connect = () => {
-  const { isLoading } = useWhoopAuth();
+  const { isLoading, refreshUser } = useWhoopAuth();
+  const [clientId, setClientId] = useState(whoopService.getClientId() || '');
+  const [showSettings, setShowSettings] = useState(
+    whoopService.getClientId() === 'whoop-client-id-placeholder'
+  );
+  const { toast } = useToast();
+
+  const handleSaveClientId = () => {
+    if (clientId && clientId.trim() !== '') {
+      whoopService.setClientId(clientId);
+      toast({
+        title: "Client ID saved",
+        description: "Your WHOOP Client ID has been saved successfully.",
+      });
+      setShowSettings(false);
+      refreshUser();
+    } else {
+      toast({
+        title: "Invalid Client ID",
+        description: "Please enter a valid WHOOP Client ID.",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <MainLayout>
@@ -20,9 +48,54 @@ const Connect = () => {
               Link your WHOOP account to view your personal data
             </p>
           </div>
+          <Button
+            onClick={() => setShowSettings(!showSettings)}
+            variant="outline"
+            className="bg-transparent text-whoop-white border-whoop-white/20 hover:bg-white/10"
+          >
+            {showSettings ? "Hide Settings" : "Configure API"}
+          </Button>
         </header>
 
         <div className="grid grid-cols-1 gap-8">
+          {showSettings && (
+            <Card className="bg-whoop-black/80 backdrop-blur-sm border border-whoop-white/10 rounded-lg shadow-lg overflow-hidden">
+              <CardHeader className="border-b border-whoop-white/10">
+                <CardTitle className="text-whoop-white">WHOOP API Configuration</CardTitle>
+                <CardDescription className="text-whoop-white/70">
+                  Enter your WHOOP Client ID from the WHOOP Developer Portal
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="client-id" className="text-sm font-medium text-whoop-white/70 block mb-1">
+                      Client ID
+                    </label>
+                    <Input
+                      id="client-id"
+                      placeholder="Enter your WHOOP Client ID"
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                      className="bg-black/30 border-whoop-white/20 text-whoop-white"
+                    />
+                    <p className="text-xs text-whoop-white/50 mt-1">
+                      You can get this from the WHOOP Developer Portal by creating a new application
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t border-whoop-white/10 pt-4">
+                <Button
+                  onClick={handleSaveClientId}
+                  className="bg-whoop-teal text-whoop-black hover:brightness-110"
+                >
+                  Save Client ID
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
+
           {isLoading && (
             <div className="flex justify-center items-center h-32 bg-whoop-black/50 backdrop-blur-sm rounded-lg border border-whoop-white/10">
               <Loader2 className="h-8 w-8 animate-spin text-whoop-teal" />

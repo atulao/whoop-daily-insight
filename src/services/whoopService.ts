@@ -53,8 +53,10 @@ export interface WhoopAuthState {
 }
 
 // Initialize with your WHOOP API credentials
+// Replace with your actual Client ID from the WHOOP Developer Portal
+// This is a public client ID so it's okay to include in the codebase
 const whoopConfig: WhoopConfig = {
-  clientId: '', // You'll need to get this from WHOOP Developer Portal
+  clientId: 'whoop-client-id-placeholder', // Replace this with your actual WHOOP Client ID
   redirectUri: window.location.origin + '/connect', // This should match what's registered in WHOOP Developer Portal
 };
 
@@ -94,8 +96,26 @@ export class WhoopService {
     return this.authState.isAuthenticated;
   }
 
+  // Allow setting client ID at runtime
+  public setClientId(clientId: string) {
+    if (clientId && clientId.trim() !== '') {
+      this.config.clientId = clientId;
+      return true;
+    }
+    return false;
+  }
+
+  // Get the current client ID
+  public getClientId(): string {
+    return this.config.clientId;
+  }
+
   // Get login URL
   public getLoginUrl(): string {
+    if (!this.config.clientId || this.config.clientId === 'whoop-client-id-placeholder') {
+      throw new Error('WHOOP Client ID not configured. Please set a valid client ID.');
+    }
+    
     const params = new URLSearchParams({
       client_id: this.config.clientId,
       redirect_uri: this.config.redirectUri,
