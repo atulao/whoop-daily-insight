@@ -1,11 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import RecoveryCard from "@/components/dashboard/RecoveryCard";
-import StrainChart from "@/components/dashboard/StrainChart";
-import SleepConsistency from "@/components/dashboard/SleepConsistency";
+import DailyOverview from "@/components/dashboard/DailyOverview";
+import MyDay from "@/components/dashboard/MyDay";
 import WeeklyOverview from "@/components/dashboard/WeeklyOverview";
-import HrvTimeline from "@/components/dashboard/HrvTimeline";
 import { getTodayData, generateWeeklyData, generateSleepData } from "@/services/mockData";
 
 const Dashboard = () => {
@@ -42,9 +39,9 @@ const Dashboard = () => {
   return (
     <MainLayout>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="py-8">
-          <h1 className="text-3xl font-bold uppercase tracking-whoop text-whoop-white mb-2">Daily Insights</h1>
-          <p className="text-lg text-whoop-white/70">
+        <header className="py-6">
+          <h1 className="text-2xl font-bold uppercase tracking-whoop text-whoop-white mb-2">Overview</h1>
+          <p className="text-sm text-whoop-white/70">
             {new Date().toLocaleDateString(undefined, { 
               weekday: 'long', 
               year: 'numeric', 
@@ -54,37 +51,21 @@ const Dashboard = () => {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 gap-6">
-          {/* Primary Metrics Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <RecoveryCard 
-                recovery={todayData?.recovery} 
-                zone={todayData?.recoveryZone} 
-                strainTarget={todayData?.strainTarget}
-              />
-            </div>
-            <div className="lg:col-span-2 h-full">
-              <WeeklyOverview data={weeklyData} />
-            </div>
-          </div>
+        <div className="space-y-6">
+          <DailyOverview 
+            recovery={todayData?.recovery || 0}
+            strain={todayData?.strain || 0}
+            sleepPerformance={89}
+            hrv={todayData?.hrv || 0}
+          />
 
-          {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-whoop-black/80 backdrop-blur-sm border border-whoop-white/10 rounded-lg p-6">
-              <HrvTimeline data={weeklyData} />
-            </div>
-            <div className="bg-whoop-black/80 backdrop-blur-sm border border-whoop-white/10 rounded-lg p-6">
-              <StrainChart data={weeklyData} />
-            </div>
-          </div>
+          <MyDay 
+            sleepDuration="8:15"
+            sleepTime="11:58 PM"
+            wakeTime="8:38 AM"
+          />
 
-          {/* Sleep Analysis Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="lg:col-span-2">
-              <SleepConsistency sleepData={sleepData} />
-            </div>
-          </div>
+          <WeeklyOverview data={weeklyData} />
         </div>
       </div>
     </MainLayout>
