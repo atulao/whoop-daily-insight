@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import DailyOverview from "@/components/dashboard/DailyOverview";
@@ -24,8 +25,6 @@ const Dashboard = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const isLoading = isLoadingProfile || isLoadingRecovery || isLoadingStrain || isLoadingSleep;
-
   if (loading) {
     return (
       <MainLayout>
@@ -40,6 +39,10 @@ const Dashboard = () => {
     );
   }
 
+  // Use the mock data for display
+  const recoveryData = weeklyData.filter(data => data.type === 'recovery');
+  const strainData = weeklyData.filter(data => data.type === 'strain');
+  
   const latestRecovery = recoveryData?.[recoveryData.length - 1];
   const latestStrain = strainData?.[strainData.length - 1];
   const latestSleep = sleepData?.[sleepData.length - 1];
@@ -89,4 +92,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
