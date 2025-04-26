@@ -2,12 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWhoopAuth } from '@/contexts/WhoopAuthContext';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Lock } from 'lucide-react';
 import { whoopService } from '@/services/whoopService';
 
 export const WhoopLoginForm: React.FC = () => {
   const { isAuthenticated, isLoading, user, login, logout } = useWhoopAuth();
-  const clientIdConfigured = whoopService.getClientId() !== 'whoop-client-id-placeholder';
+  const clientIdConfigured = whoopService.getClientId() !== 'whoop-client-id-placeholder' && whoopService.getClientId() !== '';
 
   const handleLogin = () => {
     if (!clientIdConfigured) {
@@ -52,10 +52,15 @@ export const WhoopLoginForm: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="text-center py-6">
+          <div className="text-center py-4">
+            <Lock className="h-12 w-12 text-whoop-teal mx-auto mb-2" />
             <p className="text-whoop-white/70 mb-4">
               Access your personal metrics including strain, recovery, and sleep data
             </p>
+            <div className="text-xs text-whoop-white/50 bg-black/30 p-3 rounded-md">
+              When you connect, you'll be redirected to WHOOP's secure login page.
+              Your WHOOP credentials are never stored in this application.
+            </div>
           </div>
         )}
       </CardContent>
@@ -79,7 +84,7 @@ export const WhoopLoginForm: React.FC = () => {
                 CONNECTING...
               </>
             ) : (
-              'CONNECT WHOOP'
+              'CONNECT WITH WHOOP'
             )}
           </button>
         )}

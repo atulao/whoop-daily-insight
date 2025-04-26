@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { WhoopLoginForm } from '@/components/whoop/WhoopLoginForm';
 import { useWhoopAuth } from '@/contexts/WhoopAuthContext';
-import { Loader2, AlertCircle, ExternalLink, Copy, CheckIcon } from 'lucide-react';
+import { Loader2, AlertCircle, ExternalLink, Copy, CheckIcon, InfoIcon } from 'lucide-react';
 import { whoopService } from '@/services/whoopService';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const Connect = () => {
   const { isLoading, refreshUser } = useWhoopAuth();
@@ -108,9 +109,10 @@ const Connect = () => {
               </CardHeader>
               
               <Tabs defaultValue="setup" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-black/30">
+                <TabsList className="grid w-full grid-cols-3 bg-black/30">
                   <TabsTrigger value="setup" className="text-whoop-white">Setup Guide</TabsTrigger>
                   <TabsTrigger value="config" className="text-whoop-white">Configuration</TabsTrigger>
+                  <TabsTrigger value="scopes" className="text-whoop-white">OAuth Scopes</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="setup" className="p-6">
@@ -140,7 +142,8 @@ const Connect = () => {
                             <p className="text-sm font-medium text-whoop-white">Logo</p>
                             <p className="text-xs text-whoop-white/50">Required</p>
                           </div>
-                          <p className="text-sm text-whoop-white/70">Upload a 1:1 ratio image (JPG or PNG)</p>
+                          <p className="text-sm text-whoop-white/70">Upload a 1:1 ratio image (JPG or PNG), max 1MB</p>
+                          <p className="text-xs text-whoop-white/50 mt-1">Make sure your image is exactly square (1:1 ratio) and less than 1MB</p>
                         </div>
                         
                         <div>
@@ -190,14 +193,17 @@ const Connect = () => {
                             <p className="text-sm font-medium text-whoop-white">Scopes</p>
                             <p className="text-xs text-whoop-white/50">Required</p>
                           </div>
-                          <p className="text-sm text-whoop-white/70">Select at least:</p>
+                          <p className="text-sm text-whoop-white/70">Select at least these scopes:</p>
                           <ul className="list-disc list-inside text-xs text-whoop-white/70 mt-1 space-y-1">
                             <li>read:profile</li>
                             <li>read:recovery</li>
                             <li>read:cycles</li>
-                            <li>read:sleep</li>
                             <li>read:workout</li>
+                            <li>read:sleep</li>
                           </ul>
+                          <p className="text-xs text-whoop-white/50 mt-2">
+                            See the "OAuth Scopes" tab for more details about each scope
+                          </p>
                         </div>
                         
                         <div>
@@ -258,6 +264,50 @@ const Connect = () => {
                     </div>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="scopes" className="p-6">
+                  <div className="space-y-6">
+                    <Alert variant="outline" className="bg-black/30 border-whoop-white/20">
+                      <InfoIcon className="h-4 w-4 text-whoop-teal" />
+                      <AlertTitle className="text-whoop-white">Understanding WHOOP API Scopes</AlertTitle>
+                      <AlertDescription className="text-whoop-white/70">
+                        Below are the scopes used by this application. Each scope provides access to different types of data from your WHOOP account.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="space-y-4 mt-4">
+                      <div className="bg-black/30 p-4 rounded-md">
+                        <h3 className="font-semibold text-whoop-white mb-1">read:profile</h3>
+                        <p className="text-sm text-whoop-white/70">Access to user profile data including name, email, and account information</p>
+                      </div>
+
+                      <div className="bg-black/30 p-4 rounded-md">
+                        <h3 className="font-semibold text-whoop-white mb-1">read:recovery</h3>
+                        <p className="text-sm text-whoop-white/70">Access to recovery metrics including recovery score, HRV, and resting heart rate</p>
+                      </div>
+
+                      <div className="bg-black/30 p-4 rounded-md">
+                        <h3 className="font-semibold text-whoop-white mb-1">read:cycles</h3>
+                        <p className="text-sm text-whoop-white/70">Access to daily cycle data including strain scores and activity metrics</p>
+                      </div>
+
+                      <div className="bg-black/30 p-4 rounded-md">
+                        <h3 className="font-semibold text-whoop-white mb-1">read:workout</h3>
+                        <p className="text-sm text-whoop-white/70">Access to workout data including duration, heart rate, and other exercise metrics</p>
+                      </div>
+
+                      <div className="bg-black/30 p-4 rounded-md">
+                        <h3 className="font-semibold text-whoop-white mb-1">read:sleep</h3>
+                        <p className="text-sm text-whoop-white/70">Access to sleep data including duration, quality, stages, and other sleep metrics</p>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-whoop-white/70">
+                      When authorizing this application, you will see these scopes listed on the WHOOP authorization page. 
+                      You can review and approve what data this application can access.
+                    </p>
+                  </div>
+                </TabsContent>
               </Tabs>
               
               <CardFooter className="border-t border-whoop-white/10 pt-4 pb-4">
@@ -301,6 +351,15 @@ const Connect = () => {
                 You can disconnect your WHOOP account at any time, which will immediately stop
                 any data syncing between WHOOP and this application.
               </p>
+              <div className="mt-6 p-4 bg-black/30 rounded-md">
+                <h3 className="text-whoop-white font-medium mb-2">About OAuth Authentication</h3>
+                <p className="text-sm text-whoop-white/70">
+                  This app uses OAuth 2.0 to securely authenticate with WHOOP. 
+                  When you click "Connect WHOOP," you'll be redirected to WHOOP's official authorization page
+                  where you grant permission for this app to access your data.
+                  We never see or store your WHOOP password.
+                </p>
+              </div>
             </div>
           </div>
         </div>

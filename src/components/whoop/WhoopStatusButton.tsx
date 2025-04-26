@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useWhoopAuth } from '@/contexts/WhoopAuthContext';
-import { Check, X, Settings, AlertTriangle } from 'lucide-react';
+import { Check, X, Settings, AlertTriangle, Lock } from 'lucide-react';
 import { whoopService } from '@/services/whoopService';
 
 export const WhoopStatusButton: React.FC = () => {
@@ -55,7 +55,7 @@ export const WhoopStatusButton: React.FC = () => {
         </>
       ) : (
         <>
-          <X className="h-4 w-4 text-whoop-recovery-low" />
+          <Lock className="h-4 w-4" />
           <span>CONNECT WHOOP</span>
         </>
       )}
