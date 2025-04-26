@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { WhoopLoginForm } from '@/components/whoop/WhoopLoginForm';
@@ -75,7 +74,7 @@ const Connect = () => {
           </div>
           <Button
             onClick={() => setShowSettings(!showSettings)}
-            variant="outline"
+            variant="secondary"
             className="bg-transparent text-whoop-white border-whoop-white/20 hover:bg-white/10"
           >
             {showSettings ? "Hide Settings" : "Configure API"}
@@ -161,7 +160,7 @@ const Connect = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <code className="bg-black/30 text-xs px-2 py-1 rounded text-whoop-white/80 flex-1">{privacyPolicyUrl}</code>
-                            <Button size="sm" variant="outline" onClick={() => copyToClipboard(privacyPolicyUrl)} 
+                            <Button size="sm" variant="secondary" onClick={() => copyToClipboard(privacyPolicyUrl)} 
                               className="bg-transparent border-whoop-white/20">
                               {isCopied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                             </Button>
@@ -178,7 +177,7 @@ const Connect = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <code className="bg-black/30 text-xs px-2 py-1 rounded text-whoop-white/80 flex-1">{redirectUri}</code>
-                            <Button size="sm" variant="outline" onClick={() => copyToClipboard(redirectUri)} 
+                            <Button size="sm" variant="secondary" onClick={() => copyToClipboard(redirectUri)} 
                               className="bg-transparent border-whoop-white/20">
                               {isCopied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                             </Button>
