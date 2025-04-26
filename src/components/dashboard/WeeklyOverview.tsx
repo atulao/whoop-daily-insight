@@ -14,25 +14,43 @@ interface WeeklyOverviewProps {
 
 const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ data }) => {
   const metrics = [
-    { label: "Avg Recovery", value: Math.round(data.reduce((acc, curr) => acc + curr.recovery, 0) / data.length) },
-    { label: "Avg Strain", value: Math.round(data.reduce((acc, curr) => acc + curr.strain, 0) / data.length * 10) / 10 },
-    { label: "Avg Sleep", value: Math.round(data.reduce((acc, curr) => acc + curr.sleep, 0) / data.length * 10) / 10 }
+    { 
+      label: "Avg Recovery", 
+      value: Math.round(data.reduce((acc, curr) => acc + curr.recovery, 0) / data.length),
+      unit: "%"
+    },
+    { 
+      label: "Avg Strain", 
+      value: Math.round(data.reduce((acc, curr) => acc + curr.strain, 0) / data.length * 10) / 10,
+      unit: ""
+    },
+    { 
+      label: "Avg Sleep", 
+      value: Math.round(data.reduce((acc, curr) => acc + curr.sleep, 0) / data.length * 10) / 10,
+      unit: "hrs"
+    }
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Weekly Overview</CardTitle>
+    <Card className="h-full bg-whoop-black/80 backdrop-blur-sm border-whoop-white/10">
+      <CardHeader className="border-b border-whoop-white/10">
+        <CardTitle className="font-sans text-sm font-bold uppercase tracking-whoop text-whoop-white/90">
+          Weekly Overview
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         <div className="grid grid-cols-3 gap-4">
           {metrics.map((metric) => (
             <div 
               key={metric.label}
-              className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary/20 transition-all duration-300 hover:bg-secondary/30"
+              className="flex flex-col items-center justify-center p-4 rounded-lg bg-whoop-black/40"
             >
-              <span className="text-3xl font-bold mb-2">{metric.value}</span>
-              <span className="text-sm text-muted-foreground">{metric.label}</span>
+              <span className="font-din text-3xl font-bold text-whoop-white mb-2">
+                {metric.value}{metric.unit}
+              </span>
+              <span className="font-sans text-sm font-semibold text-whoop-white/70 text-center">
+                {metric.label}
+              </span>
             </div>
           ))}
         </div>
