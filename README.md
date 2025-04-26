@@ -10,9 +10,12 @@ This is a web application designed to connect to your WHOOP account and display 
     *   Daily Strain score
     *   Sleep Performance (calculated based on duration vs. need)
     *   Heart Rate Variability (HRV)
-    *   Historical trends for Strain, Recovery, and HRV.
+    *   7-Day Strain vs. Recovery visualization
+    *   HRV timeline for the past week
+    *   Weekly overview with averages
 *   **WHOOP-Inspired UI:** Uses a dark theme and styling inspired by the WHOOP app, built with React, TypeScript, Tailwind CSS, and Shadcn UI.
 *   **Data Fetching:** Uses TanStack Query (React Query) for efficient data fetching, caching, and state management.
+*   **Robust Error Handling:** Includes comprehensive error checking and fallbacks for data processing and visualization.
 
 ## Getting Started
 
@@ -72,6 +75,17 @@ npm run dev
 ```
 
 Navigate to `http://localhost:8080` to view your dashboard.
+
+## API Integration Notes
+
+This application uses the following WHOOP API endpoints:
+
+- User profile: `/v1/user/profile/basic`
+- Recovery data: `/v1/recovery`
+- Strain/cycle data: `/v1/cycle`
+- Sleep data: `/v1/activity/sleep`
+
+The application implements proper error handling for API requests and data processing to ensure reliability.
 
 ## Technology Stack
 
