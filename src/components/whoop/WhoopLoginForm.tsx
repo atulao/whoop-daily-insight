@@ -8,16 +8,16 @@ export const WhoopLoginForm: React.FC = () => {
   const { isAuthenticated, isLoading, user, login, logout } = useWhoopAuth();
 
   return (
-    <Card className="w-full max-w-md mx-auto bg-whoop-black/80 backdrop-blur-sm border-whoop-teal/20">
-      <CardHeader>
-        <CardTitle className="text-whoop-white uppercase tracking-whoop">WHOOP Integration</CardTitle>
-        <CardDescription className="text-whoop-white/70">
+    <Card className="w-full max-w-md mx-auto bg-whoop-black backdrop-blur-sm border border-whoop-white/10 rounded-lg shadow-lg overflow-hidden">
+      <CardHeader className="border-b border-whoop-white/10 bg-black/40">
+        <CardTitle className="text-whoop-white uppercase tracking-whoop text-center">WHOOP INTEGRATION</CardTitle>
+        <CardDescription className="text-whoop-white/70 text-center">
           {isAuthenticated 
             ? 'Your WHOOP account is connected' 
             : 'Connect your WHOOP account to see your real data'}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         {isAuthenticated && user ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -32,18 +32,18 @@ export const WhoopLoginForm: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="text-center py-4">
+          <div className="text-center py-6">
             <p className="text-whoop-white/70 mb-4">
               Access your personal metrics including strain, recovery, and sleep data
             </p>
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between p-6 pt-0">
         {isAuthenticated ? (
           <button 
             onClick={logout} 
-            className="w-full bg-whoop-black border border-whoop-white/20 rounded-md py-2 px-4 text-whoop-white font-sans font-semibold uppercase tracking-whoop text-sm hover:bg-white/10 transition-colors duration-200"
+            className="w-full bg-whoop-black border border-whoop-white/20 rounded-md py-3 px-4 text-whoop-white font-sans font-semibold uppercase tracking-whoop text-sm hover:bg-white/10 transition-colors duration-200"
           >
             DISCONNECT WHOOP
           </button>
@@ -51,7 +51,7 @@ export const WhoopLoginForm: React.FC = () => {
           <button 
             onClick={login} 
             disabled={isLoading} 
-            className="w-full bg-whoop-teal text-whoop-black rounded-md py-2 px-4 font-sans font-semibold uppercase tracking-whoop text-sm hover:brightness-110 transition-all duration-200 disabled:opacity-70"
+            className="w-full bg-whoop-teal text-whoop-black rounded-md py-3 px-4 font-sans font-semibold uppercase tracking-whoop text-sm hover:brightness-110 transition-all duration-200 disabled:opacity-70"
           >
             {isLoading ? (
               <>
