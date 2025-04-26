@@ -1,33 +1,41 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { WhoopRecovery, WhoopStrain, WhoopSleep } from "@/services/whoopService";
 
 interface WeeklyOverviewProps {
-  data: Array<{
-    date: string;
-    recovery: number;
-    strain: number;
-    sleep: number;
-  }>;
+  recoveryData: WhoopRecovery[] | null | undefined;
+  strainData: WhoopStrain[] | null | undefined;
+  sleepData: WhoopSleep[] | null | undefined;
 }
 
-const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ data }) => {
+const calculateAverage = (data: any[] | null | undefined, key: string): number => {
+  if (!data || data.length === 0) return 0;
+  const total = data.reduce((acc, curr) => acc + (curr?.[key] || 0), 0);
+  return total / data.length;
+};
+
+const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ recoveryData, strainData, sleepData }) => {
+  const avgRecovery = Math.round(calculateAverage(recoveryData, 'score'));
+  const avgStrain = parseFloat(calculateAverage(strainData, 'score').toFixed(1));
+  const avgSleepSeconds = calculateAverage(sleepData, 'qualityDuration');
+  const avgSleepHours = parseFloat((avgSleepSeconds / 3600).toFixed(1));
+
   const metrics = [
     { 
       label: "Avg Recovery", 
-      value: Math.round(data.reduce((acc, curr) => acc + curr.recovery, 0) / data.length),
+      value: avgRecovery,
       unit: "%"
     },
     { 
       label: "Avg Strain", 
-      value: Math.round(data.reduce((acc, curr) => acc + curr.strain, 0) / data.length * 10) / 10,
+      value: avgStrain,
       unit: ""
     },
     { 
       label: "Avg Sleep", 
-      value: Math.round(data.reduce((acc, curr) => acc + curr.sleep, 0) / data.length * 10) / 10,
-      unit: "hrs"
+      value: avgSleepHours,
+      unit: " hrs"
     }
   ];
 

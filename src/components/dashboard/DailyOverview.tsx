@@ -1,19 +1,17 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { WhoopRecovery, WhoopStrain, WhoopSleep } from "@/services/whoopService";
 
 interface DailyOverviewProps {
-  recovery: number;
-  strain: number;
-  sleepPerformance: number;
-  hrv: number;
+  latestRecovery: WhoopRecovery | null | undefined;
+  latestStrain: WhoopStrain | null | undefined;
+  latestSleep: WhoopSleep | null | undefined;
 }
 
 const DailyOverview: React.FC<DailyOverviewProps> = ({ 
-  recovery, 
-  strain, 
-  sleepPerformance,
-  hrv 
+  latestRecovery, 
+  latestStrain, 
+  latestSleep
 }) => {
   const getRecoveryColor = (value: number) => {
     if (value >= 67) return 'text-whoop-recovery-high';
@@ -21,12 +19,19 @@ const DailyOverview: React.FC<DailyOverviewProps> = ({
     return 'text-whoop-recovery-low';
   };
 
+  const recoveryScore = latestRecovery?.score ?? 0;
+  const strainScore = latestStrain?.score ?? 0;
+  const sleepPerformance = latestSleep?.qualityDuration && latestSleep?.sleepNeed 
+                           ? Math.round((latestSleep.qualityDuration / latestSleep.sleepNeed) * 100)
+                           : 0;
+  const hrv = latestRecovery?.hrvMs ?? 0;
+
   return (
     <Card className="bg-whoop-black/80 backdrop-blur-sm border-whoop-white/10">
       <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6">
         <div className="text-center">
-          <p className={`font-din text-4xl font-bold ${getRecoveryColor(recovery)} mb-1`}>
-            {recovery}%
+          <p className={`font-din text-4xl font-bold ${getRecoveryColor(recoveryScore)} mb-1`}>
+            {recoveryScore}%
           </p>
           <p className="font-sans text-sm uppercase tracking-whoop text-whoop-white/70">
             Recovery
@@ -35,7 +40,7 @@ const DailyOverview: React.FC<DailyOverviewProps> = ({
 
         <div className="text-center">
           <p className="font-din text-4xl font-bold text-whoop-blue mb-1">
-            {strain}
+            {strainScore.toFixed(1)}
           </p>
           <p className="font-sans text-sm uppercase tracking-whoop text-whoop-white/70">
             Strain
@@ -44,7 +49,7 @@ const DailyOverview: React.FC<DailyOverviewProps> = ({
 
         <div className="text-center">
           <p className="font-din text-4xl font-bold text-whoop-white mb-1">
-            {sleepPerformance}%
+            {sleepPerformance > 0 ? `${sleepPerformance}%` : '--'}
           </p>
           <p className="font-sans text-sm uppercase tracking-whoop text-whoop-white/70">
             Sleep Performance

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import DailyOverview from "@/components/dashboard/DailyOverview";
@@ -25,6 +24,8 @@ const Dashboard = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  const isLoading = isLoadingProfile || isLoadingRecovery || isLoadingStrain || isLoadingSleep;
+
   if (loading) {
     return (
       <MainLayout>
@@ -38,6 +39,10 @@ const Dashboard = () => {
       </MainLayout>
     );
   }
+
+  const latestRecovery = recoveryData?.[recoveryData.length - 1];
+  const latestStrain = strainData?.[strainData.length - 1];
+  const latestSleep = sleepData?.[sleepData.length - 1];
 
   return (
     <MainLayout>
@@ -58,30 +63,25 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <DailyOverview 
-                recovery={todayData?.recovery || 0}
-                strain={todayData?.strain || 0}
-                sleepPerformance={89}
-                hrv={todayData?.hrv || 0}
+                latestRecovery={latestRecovery}
+                latestStrain={latestStrain}
+                latestSleep={latestSleep}
               />
             </div>
             <div>
-              <MyDay 
-                sleepDuration="8:15"
-                sleepTime="11:58 PM"
-                wakeTime="8:38 AM"
-              />
+              <MyDay latestSleep={latestSleep} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <StrainChart data={weeklyData} />
-            <HrvTimeline data={weeklyData.map(day => ({
+            <StrainChart strainData={strainData} recoveryData={recoveryData} />
+            <HrvTimeline data={recoveryData?.map(day => ({
               date: day.date,
-              hrv: day.hrv || Math.round(Math.random() * 50 + 40)
-            }))} />
+              hrv: day.hrvMs
+            })) || []} />
           </div>
 
-          <WeeklyOverview data={weeklyData} />
+          <WeeklyOverview recoveryData={recoveryData} strainData={strainData} sleepData={sleepData} />
         </div>
       </div>
     </MainLayout>

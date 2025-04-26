@@ -1,33 +1,54 @@
-
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import SleepConsistency from "@/components/dashboard/SleepConsistency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { generateSleepData } from "@/services/mockData";
-import { Bed, Moon, Sunrise } from "lucide-react";
+import { whoopService } from "@/services/whoopService";
+import { Bed, Moon, Sunrise, Loader2 } from "lucide-react";
+import { formatDuration, formatTime } from "./utils/formatters";
 
 const Sleep = () => {
-  const sleepData = generateSleepData();
-  const todaySleep = sleepData[sleepData.length - 1];
+  const { data: sleepData, isLoading: isLoadingSleep } = useQuery({
+    queryKey: ["whoopSleep30"],
+    queryFn: () => whoopService.getSleep(30),
+  });
+
+  if (isLoadingSleep) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-screen">
+          <Loader2 className="h-16 w-16 animate-spin text-whoop-teal" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const latestSleep = sleepData?.[sleepData.length - 1];
   
+  const sleepScore = latestSleep?.qualityDuration && latestSleep?.sleepNeed 
+                      ? Math.round((latestSleep.qualityDuration / latestSleep.sleepNeed) * 100)
+                      : 0;
+  const timeInBed = latestSleep?.qualityDuration ? formatDuration(latestSleep.qualityDuration) : "--:--";
+  const wakeTime = "--:--";
+
   const sleepMetrics = [
     {
       icon: <Moon className="h-5 w-5 text-whoop-sleep-blue" />,
       label: "SLEEP SCORE",
-      value: "87%",
-      description: "Good sleep quality"
+      value: sleepScore > 0 ? `${sleepScore}%` : "--",
+      description: sleepScore > 70 ? "Good sleep quality" : "Needs improvement"
     },
     {
       icon: <Bed className="h-5 w-5 text-whoop-sleep-blue" />,
       label: "TIME IN BED",
-      value: "8h 12m",
-      description: "Target: 8h"
+      value: timeInBed,
+      description: `Need: ${latestSleep?.sleepNeed ? formatDuration(latestSleep.sleepNeed) : '--'}`
     },
     {
       icon: <Sunrise className="h-5 w-5 text-whoop-sleep-blue" />,
       label: "WAKE TIME",
-      value: todaySleep.wakeTime,
-      description: "Consistent pattern"
+      value: wakeTime,
+      description: "Consistency N/A"
     }
   ];
 
@@ -67,7 +88,7 @@ const Sleep = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6">
-          <SleepConsistency sleepData={sleepData} />
+          <SleepConsistency sleepData={sleepData || []} />
         </div>
       </div>
     </MainLayout>

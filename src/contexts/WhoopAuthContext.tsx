@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { whoopService, WhoopUser } from '@/services/whoopService';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
 
 interface WhoopAuthContextType {
   isAuthenticated: boolean;
@@ -61,15 +62,19 @@ export const WhoopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           title: 'Successfully connected to WHOOP',
           description: 'Your WHOOP data is now available in the app',
         });
-        
+        // Reload user data after successful connection
+        refreshUser(); 
         // Remove code from URL
         window.history.replaceState({}, document.title, '/connect');
       } else {
+        // Ensure toast is shown if handleAuthCallback returns false without throwing
         toast({
           title: 'Failed to connect to WHOOP',
-          description: 'Please try again',
+          description: 'Authentication failed after callback. Please check configuration and try again.',
           variant: 'destructive',
         });
+        // Optionally clear the code from URL even on failure to avoid loops?
+        // window.history.replaceState({}, document.title, '/connect');
       }
     } catch (error) {
       console.error('Authentication error:', error);
@@ -78,6 +83,16 @@ export const WhoopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         description: error instanceof Error ? error.message : 'An error occurred during authentication',
         variant: 'destructive',
       });
+      
+      // If API returns 401 Unauthorized, logout (refresh already attempted in apiRequest)
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast({ 
+          title: "Session Expired", 
+          description: "Please log in again.", 
+          variant: "destructive" 
+        });
+        logout();
+      }
     } finally {
       setIsLoading(false);
     }

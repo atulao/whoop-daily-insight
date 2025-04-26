@@ -1,16 +1,19 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Moon, Plus, Timer, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WhoopSleep } from "@/services/whoopService";
 
 interface MyDayProps {
-  sleepDuration: string;
-  sleepTime: string;
-  wakeTime: string;
+  latestSleep: WhoopSleep | null | undefined;
 }
 
-const MyDay: React.FC<MyDayProps> = ({ sleepDuration, sleepTime, wakeTime }) => {
+const MyDay: React.FC<MyDayProps> = ({ latestSleep }) => {
+  
+  const sleepDuration = latestSleep?.qualityDuration ? "FormattedDur" : "--:--";
+  const sleepTime = "--:--";
+  const wakeTime = "--:--";
+
   return (
     <Card className="bg-whoop-black/80 backdrop-blur-sm border-whoop-white/10">
       <CardHeader>

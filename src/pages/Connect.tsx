@@ -14,9 +14,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 const Connect = () => {
   const { isLoading, refreshUser } = useWhoopAuth();
-  const [clientId, setClientId] = useState(whoopService.getClientId() || '');
+  const initialClientId = whoopService.getClientId();
   const [showSettings, setShowSettings] = useState(
-    whoopService.getClientId() === 'whoop-client-id-placeholder' || !whoopService.getClientId()
+    initialClientId === 'whoop-client-id-placeholder' 
   );
   const [isCopied, setIsCopied] = useState(false);
   const { toast } = useToast();
@@ -27,15 +27,22 @@ const Connect = () => {
   // Generate a privacy policy URL (placeholder)
   const privacyPolicyUrl = window.location.origin + '/privacy';
 
-  const handleSaveClientId = () => {
-    if (clientId && clientId.trim() !== '') {
-      whoopService.setClientId(clientId);
-      toast({
-        title: "Client ID saved",
-        description: "Your WHOOP Client ID has been saved successfully.",
-      });
-      setShowSettings(false);
-      refreshUser();
+  const handleSaveClientId = (newClientId: string) => {
+    if (newClientId && newClientId.trim() !== '') {
+      const success = whoopService.setClientId(newClientId);
+      if (success) {
+        toast({
+          title: "Client ID saved",
+          description: "Your WHOOP Client ID has been saved successfully.",
+        });
+        setShowSettings(false);
+      } else {
+        toast({
+          title: "Failed to save Client ID",
+          description: "An unexpected error occurred.",
+          variant: "destructive"
+        });
+      }
     } else {
       toast({
         title: "Invalid Client ID",
@@ -222,46 +229,13 @@ const Connect = () => {
                 </TabsContent>
                 
                 <TabsContent value="config" className="p-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="client-id" className="text-sm font-medium text-whoop-white/70 block mb-1">
-                        Client ID
-                      </label>
-                      <Input
-                        id="client-id"
-                        placeholder="Enter your WHOOP Client ID"
-                        value={clientId}
-                        onChange={(e) => setClientId(e.target.value)}
-                        className="bg-black/30 border-whoop-white/20 text-whoop-white"
-                      />
-                      <p className="text-xs text-whoop-white/50 mt-1">
-                        You can get this from the WHOOP Developer Portal after creating an application
-                      </p>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <label className="text-sm font-medium text-whoop-white/70 block mb-1">
-                        Redirect URI (for WHOOP Developer Portal)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          readOnly
-                          value={redirectUri}
-                          className="bg-black/30 border-whoop-white/20 text-whoop-white"
-                        />
-                        <Button
-                          onClick={() => copyToClipboard(redirectUri)}
-                          className="whitespace-nowrap"
-                        >
-                          {isCopied ? <CheckIcon className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                          Copy
-                        </Button>
-                      </div>
-                      <p className="text-xs text-whoop-white/50 mt-1">
-                        Use this exact URL in your WHOOP Developer Portal under "Redirect URIs"
-                      </p>
-                    </div>
-                  </div>
+                  <ConfigForm 
+                    initialClientId={initialClientId} 
+                    onSave={handleSaveClientId} 
+                    redirectUri={redirectUri} 
+                    copyToClipboard={copyToClipboard}
+                    isCopied={isCopied}
+                  />
                 </TabsContent>
 
                 <TabsContent value="scopes" className="p-6">
@@ -311,7 +285,7 @@ const Connect = () => {
               
               <CardFooter className="border-t border-whoop-white/10 pt-4 pb-4">
                 <Button
-                  onClick={handleSaveClientId}
+                  onClick={() => setShowSettings(false)}
                   className="bg-whoop-teal text-whoop-black hover:brightness-110"
                 >
                   Save Client ID
@@ -364,6 +338,75 @@ const Connect = () => {
         </div>
       </div>
     </MainLayout>
+  );
+};
+
+// --- Extract Config Form Component --- 
+interface ConfigFormProps {
+  initialClientId: string;
+  onSave: (clientId: string) => void;
+  redirectUri: string;
+  copyToClipboard: (text: string) => void;
+  isCopied: boolean;
+}
+
+const ConfigForm: React.FC<ConfigFormProps> = ({ 
+  initialClientId,
+  onSave,
+  redirectUri,
+  copyToClipboard,
+  isCopied
+}) => {
+  const [currentClientId, setCurrentClientId] = useState(initialClientId);
+
+  const handleSave = () => {
+    onSave(currentClientId);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label htmlFor="client-id" className="text-sm font-medium text-whoop-white/70 block mb-1">
+          Client ID
+        </label>
+        <Input
+          id="client-id"
+          placeholder="Enter your WHOOP Client ID"
+          value={currentClientId === 'whoop-client-id-placeholder' ? '' : currentClientId}
+          onChange={(e) => setCurrentClientId(e.target.value)}
+          className="bg-black/30 border-whoop-white/20 text-whoop-white"
+        />
+        <p className="text-xs text-whoop-white/50 mt-1">
+          You can get this from the WHOOP Developer Portal after creating an application
+        </p>
+      </div>
+      
+      <div className="mt-4">
+        <label className="text-sm font-medium text-whoop-white/70 block mb-1">
+          Redirect URI (for WHOOP Developer Portal)
+        </label>
+        <div className="flex items-center gap-2">
+          <Input
+            readOnly
+            value={redirectUri}
+            className="bg-black/30 border-whoop-white/20 text-whoop-white"
+          />
+          <Button size="sm" variant="secondary" onClick={() => copyToClipboard(redirectUri)} 
+            className="bg-transparent border-whoop-white/20">
+            {isCopied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </Button>
+        </div>
+        <p className="text-xs text-whoop-white/50 mt-1">
+          Copy this exactly into your WHOOP App's Redirect URL field.
+        </p>
+      </div>
+      
+      <div className="flex justify-end mt-6">
+          <Button onClick={handleSave} className="bg-whoop-teal text-whoop-dark-blue hover:bg-whoop-teal/80">
+            Save Client ID
+          </Button>
+      </div>
+    </div>
   );
 };
 

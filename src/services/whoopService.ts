@@ -51,13 +51,17 @@ export interface WhoopAuthState {
   expiresAt?: number;
 }
 
-// Initialize with your WHOOP API credentials
-// Replace with your actual Client ID from the WHOOP Developer Portal
-// This is a public client ID so it's okay to include in the codebase
-const whoopConfig: WhoopConfig = {
-  clientId: 'whoop-client-id-placeholder', // Replace this with your actual WHOOP Client ID
-  redirectUri: window.location.origin + '/connect', // This should match what's registered in WHOOP Developer Portal
-};
+// Store config in localStorage keys
+const CLIENT_ID_KEY = 'whoopConfig_clientId';
+
+// Function to load config from localStorage
+function loadConfigFromLocalStorage(): WhoopConfig {
+  const clientId = localStorage.getItem(CLIENT_ID_KEY) || 'whoop-client-id-placeholder';
+  return {
+    clientId: clientId,
+    redirectUri: window.location.origin + '/connect',
+  };
+}
 
 interface PKCEChallenge {
   codeVerifier: string;
@@ -71,8 +75,8 @@ export class WhoopService {
     isAuthenticated: false
   };
 
-  constructor(config: WhoopConfig = whoopConfig) {
-    this.config = config;
+  constructor() { // Remove default config parameter
+    this.config = loadConfigFromLocalStorage(); // Load from localStorage
     this.loadAuthStateFromLocalStorage();
   }
 
@@ -84,8 +88,12 @@ export class WhoopService {
       
       // Check if token has expired
       if (this.authState.expiresAt && this.authState.expiresAt < Date.now()) {
-        console.log('WHOOP token expired, need to refresh');
-        this.logout(); // For simplicity, just log out if expired
+        console.log('WHOOP token expired, attempting refresh...');
+        // Attempt refresh instead of immediate logout
+        this.refreshToken().catch(error => {
+          console.error('Failed to refresh token on load:', error);
+          this.logout();
+        });
       }
     }
   }
@@ -101,9 +109,10 @@ export class WhoopService {
   }
 
   // Allow setting client ID at runtime
-  public setClientId(clientId: string) {
+  public setClientId(clientId: string): boolean {
     if (clientId && clientId.trim() !== '') {
-      this.config.clientId = clientId;
+      this.config.clientId = clientId.trim();
+      localStorage.setItem(CLIENT_ID_KEY, this.config.clientId); // Save to localStorage
       return true;
     }
     return false;
@@ -208,7 +217,42 @@ export class WhoopService {
       return true;
     } catch (error) {
       console.error('Failed to authenticate with WHOOP:', error);
+      // Clean up PKCE values even on failure
+      localStorage.removeItem('pkce_verifier');
+      localStorage.removeItem('pkce_state');
       return false;
+    }
+  }
+
+  // Refresh token
+  private async refreshToken(): Promise<void> {
+    if (!this.authState.refreshToken) {
+      console.error('No refresh token available.');
+      this.logout();
+      throw new Error('No refresh token available.');
+    }
+
+    try {
+      const response = await axios.post(WHOOP_TOKEN_URL, {
+        grant_type: 'refresh_token',
+        refresh_token: this.authState.refreshToken,
+        client_id: this.config.clientId, // Client ID might be required by WHOOP
+      });
+
+      this.authState = {
+        ...this.authState,
+        isAuthenticated: true,
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || this.authState.refreshToken, // Keep old if new one isn't provided
+        expiresAt: Date.now() + response.data.expires_in * 1000,
+      };
+
+      this.saveAuthStateToLocalStorage();
+      console.log('WHOOP token refreshed successfully.');
+    } catch (error) {
+      console.error('Failed to refresh WHOOP token:', error);
+      this.logout(); // Logout if refresh fails
+      throw error; // Re-throw error
     }
   }
 
@@ -224,6 +268,16 @@ export class WhoopService {
       throw new Error('Not authenticated with WHOOP');
     }
 
+    // Check for expiration before making request
+    if (this.authState.expiresAt && this.authState.expiresAt < Date.now()) {
+      console.log('Token expired before request, attempting refresh...');
+      try {
+        await this.refreshToken();
+      } catch (refreshError) {
+        throw new Error('Session expired. Please login again.');
+      }
+    }
+
     try {
       const response = await axios.get(`${WHOOP_API_BASE_URL}${endpoint}`, {
         headers: { 
@@ -233,7 +287,26 @@ export class WhoopService {
       return response.data;
     } catch (error) {
       console.error('WHOOP API request failed:', error);
-      throw error;
+      // Check for 401 Unauthorized error and attempt refresh
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log('Received 401, attempting token refresh...');
+        try {
+          await this.refreshToken();
+          // Retry the original request with the new token
+          console.log('Retrying API request after refresh...');
+          const retryResponse = await axios.get(`${WHOOP_API_BASE_URL}${endpoint}`, {
+            headers: { 
+              'Authorization': `Bearer ${this.authState.accessToken}` 
+            }
+          });
+          return retryResponse.data;
+        } catch (refreshError) {
+          console.error('Token refresh failed after 401:', refreshError);
+          this.logout(); // Log out if refresh fails
+          throw new Error('Session expired. Please login again.');
+        }
+      }
+      throw error; // Re-throw other errors
     }
   }
 

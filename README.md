@@ -1,73 +1,93 @@
-# Welcome to your Lovable project
+# WHOOP Daily Insight Dashboard
 
-## Project info
+This is a web application designed to connect to your WHOOP account and display your personal health and fitness metrics in a dashboard format.
 
-**URL**: https://lovable.dev/projects/099af7c5-0376-4fa3-ae72-b24a28230c17
+## Features
 
-## How can I edit this code?
+*   **Secure WHOOP Connection:** Connects to the official WHOOP API using OAuth 2.0 with PKCE for enhanced security.
+*   **Data Visualization:** Displays key WHOOP metrics, including:
+    *   Daily Recovery score
+    *   Daily Strain score
+    *   Sleep Performance (calculated based on duration vs. need)
+    *   Heart Rate Variability (HRV)
+    *   Historical trends for Strain, Recovery, and HRV.
+*   **WHOOP-Inspired UI:** Uses a dark theme and styling inspired by the WHOOP app, built with React, TypeScript, Tailwind CSS, and Shadcn UI.
+*   **Data Fetching:** Uses TanStack Query (React Query) for efficient data fetching, caching, and state management.
 
-There are several ways of editing your application.
+## Getting Started
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/099af7c5-0376-4fa3-ae72-b24a28230c17) and start prompting.
+*   Node.js and npm (or Bun)
+*   A WHOOP account
+*   Access to the [WHOOP Developer Portal](https://developer.whoop.com/) to create an application.
 
-Changes made via Lovable will be committed automatically to this repo.
+### Installation
 
-**Use your preferred IDE**
+1.  **Clone the repository:**
+    ```bash
+    git clone <your-repository-url>
+    cd whoop-daily-insight
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    # bun install 
+    ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Configuration (WHOOP Developer App Setup)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Before running the application, you need to configure it with your WHOOP Developer application details:
 
-Follow these steps:
+1.  **Run the app locally:**
+    ```bash
+    npm run dev
+    # or
+    # bun dev
+    ```
+    The application should open at `http://localhost:8080` (or the configured port).
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+2.  **Navigate to the Connect Page:** Go to the `/connect` route in the application (e.g., `http://localhost:8080/connect`).
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+3.  **Follow Setup Instructions:** The Connect page includes a detailed guide on how to:
+    *   Go to the [WHOOP Developer Portal](https://developer.whoop.com/).
+    *   Create a new application.
+    *   **Crucially**, configure the **Redirect URL** in the WHOOP Developer Portal to **exactly match** the one shown on the Connect page (it will be based on your localhost address, e.g., `http://localhost:8080/connect`).
+    *   Select the required **scopes** (e.g., `read:profile`, `read:recovery`, `read:cycles`, `read:sleep`).
+    *   Obtain your **Client ID** after creating the app.
 
-# Step 3: Install the necessary dependencies.
-npm i
+4.  **Enter Client ID:** Paste the **Client ID** obtained from the WHOOP Developer Portal into the configuration input field on the `/connect` page within this application and save it.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+5.  **Connect Your Account:** Click the "Connect WHOOP" button and authorize the application via the WHOOP login page.
+
+### Running the App
+
+Once configured, run the development server:
+
+```bash
 npm run dev
+# or
+# bun dev
 ```
 
-**Edit a file directly in GitHub**
+Navigate to `http://localhost:8080` to view your dashboard.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Technology Stack
 
-**Use GitHub Codespaces**
+*   **Framework:** React (with Vite)
+*   **Language:** TypeScript
+*   **Styling:** Tailwind CSS
+*   **UI Components:** Shadcn UI
+*   **Data Fetching/State Management:** TanStack Query (React Query) v5
+*   **Routing:** React Router DOM v6
+*   **Charting:** Recharts
+*   **API Interaction:** Axios
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Contributing
 
-## What technologies are used for this project?
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-This project is built with:
+## License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/099af7c5-0376-4fa3-ae72-b24a28230c17) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is open-source (consider adding a LICENSE file, e.g., MIT).

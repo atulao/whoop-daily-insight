@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -14,41 +13,76 @@ import {
   ReferenceLine 
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { WhoopStrain, WhoopRecovery } from "@/services/whoopService";
 
-interface DataPoint {
+// Combined data point structure for the chart
+interface CombinedDataPoint {
   date: string;
   recovery: number;
   recoveryZone: 'green' | 'yellow' | 'red';
-  strainTarget: { min: number; max: number };
   actualStrain: number;
-  capacity: number;
+  // strainTarget: { min: number; max: number }; // Removed - not available directly
+  // capacity: number; // Removed - not available directly
 }
 
 interface StrainChartProps {
-  data: DataPoint[];
+  strainData: WhoopStrain[] | null | undefined;
+  recoveryData: WhoopRecovery[] | null | undefined;
 }
 
 const formatDate = (dateStr: string) => {
+  if (!dateStr) return "";
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
+const getRecoveryZone = (score: number): 'green' | 'yellow' | 'red' => {
+  if (score >= 67) return 'green';
+  if (score >= 34) return 'yellow';
+  return 'red';
+};
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
+    const data = payload[0].payload as CombinedDataPoint;
     return (
       <div className="bg-whoop-black p-3 border border-whoop-white/10 rounded-md shadow-lg">
         <p className="font-sans uppercase tracking-whoop text-whoop-white mb-1">{formatDate(data.date)}</p>
-        <p className="text-sm text-whoop-white/70">Recovery: <span className="font-din font-bold text-whoop-white">{data.recovery}%</span></p>
+        <p className={cn("text-sm", 
+            data.recoveryZone === 'green' ? "text-whoop-recovery-high" : 
+            data.recoveryZone === 'yellow' ? "text-whoop-recovery-med" : "text-whoop-recovery-low"
+        )}>
+          Recovery: <span className="font-din font-bold text-whoop-white">{data.recovery}%</span>
+        </p>
         <p className="text-sm text-whoop-white/70">Strain: <span className="font-din font-bold text-whoop-white">{data.actualStrain.toFixed(1)}</span></p>
-        <p className="text-sm text-whoop-white/70">Target: <span className="font-din font-bold text-whoop-white">{data.strainTarget.min}-{data.strainTarget.max}</span></p>
+        {/* Removed strainTarget display */}
       </div>
     );
   }
   return null;
 };
 
-const StrainChart: React.FC<StrainChartProps> = ({ data }) => {
+const StrainChart: React.FC<StrainChartProps> = ({ strainData, recoveryData }) => {
+
+  // Combine strain and recovery data based on date
+  const combinedData: CombinedDataPoint[] = React.useMemo(() => {
+    if (!strainData || !recoveryData) return [];
+    
+    const recoveryMap = new Map(recoveryData.map(item => [item.date, item]));
+
+    return strainData.map(strainItem => {
+      const recoveryItem = recoveryMap.get(strainItem.date);
+      const recoveryScore = recoveryItem?.score ?? 0;
+      return {
+        date: strainItem.date,
+        actualStrain: strainItem.score,
+        recovery: recoveryScore,
+        recoveryZone: getRecoveryZone(recoveryScore),
+      };
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Ensure sorted by date
+
+  }, [strainData, recoveryData]);
+
   return (
     <Card className="bg-transparent border-0 shadow-none">
       <CardHeader className="px-6 pt-6 pb-2">
@@ -60,7 +94,7 @@ const StrainChart: React.FC<StrainChartProps> = ({ data }) => {
       <CardContent className="p-2">
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+            <ComposedChart data={combinedData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#444" strokeOpacity={0.3} />
               <XAxis 
                 dataKey="date" 
@@ -91,25 +125,7 @@ const StrainChart: React.FC<StrainChartProps> = ({ data }) => {
                   return <span className="text-xs uppercase tracking-whoop text-whoop-white/70">{value}</span>
                 }}
               />
-              {data.map((item, index) => (
-                <ReferenceLine
-                  key={`target-${index}`}
-                  yAxisId="left"
-                  segment={[
-                    { x: item.date, y: item.strainTarget.min },
-                    { x: item.date, y: item.strainTarget.max }
-                  ]}
-                  stroke={
-                    item.recoveryZone === 'green' 
-                      ? '#16EC06' 
-                      : item.recoveryZone === 'yellow' 
-                        ? '#FFDE00' 
-                        : '#FF0026'
-                  }
-                  strokeDasharray="3 3"
-                  strokeWidth={2}
-                />
-              ))}
+              {/* Removed ReferenceLine for strainTarget */}
               <Bar 
                 yAxisId="left" 
                 dataKey="actualStrain" 
@@ -124,7 +140,13 @@ const StrainChart: React.FC<StrainChartProps> = ({ data }) => {
                 name="Recovery %" 
                 stroke="#FFFFFF" 
                 strokeWidth={2} 
-                dot={{ fill: '#FFFFFF', r: 4, strokeWidth: 0 }} 
+                dot={(props) => { // Custom dot color based on recoveryZone
+                  const { cx, cy, payload } = props;
+                  const zone = (payload as CombinedDataPoint).recoveryZone;
+                  const color = zone === 'green' ? '#16EC06' : zone === 'yellow' ? '#FFDE00' : '#FF0026';
+                  return <circle cx={cx} cy={cy} r={4} fill={color} strokeWidth={0} />;
+                }}
+                activeDot={{ r: 6 }}
               />
             </ComposedChart>
           </ResponsiveContainer>
