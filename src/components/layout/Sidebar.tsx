@@ -2,6 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { WhoopStatusButton } from "@/components/whoop/WhoopStatusButton";
 import {
   ChartBar,
   Bed,
@@ -10,6 +11,7 @@ import {
   ArrowUp,
   ArrowDown,
   Calendar,
+  Link as LinkIcon,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -53,6 +55,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       icon: <Settings className="h-5 w-5" />,
       label: "Settings",
       path: "/settings",
+    },
+    {
+      icon: <LinkIcon className="h-5 w-5" />,
+      label: "Connect WHOOP",
+      path: "/connect",
     },
   ];
 
@@ -99,6 +106,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           ))}
         </ul>
       </nav>
+      {!collapsed && (
+        <div className="p-4 border-t border-white/10">
+          <WhoopStatusButton />
+        </div>
+      )}
       <div className="p-4 border-t border-white/10 flex items-center">
         {!collapsed ? (
           <div className="text-sm text-white/60">© 2025 WHOOP Insights</div>
