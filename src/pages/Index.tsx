@@ -1,8 +1,11 @@
+
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import DailyOverview from "@/components/dashboard/DailyOverview";
 import MyDay from "@/components/dashboard/MyDay";
 import WeeklyOverview from "@/components/dashboard/WeeklyOverview";
+import StrainChart from "@/components/dashboard/StrainChart";
+import HrvTimeline from "@/components/dashboard/HrvTimeline";
 import { getTodayData, generateWeeklyData, generateSleepData } from "@/services/mockData";
 
 const Dashboard = () => {
@@ -52,18 +55,31 @@ const Dashboard = () => {
         </header>
 
         <div className="space-y-6">
-          <DailyOverview 
-            recovery={todayData?.recovery || 0}
-            strain={todayData?.strain || 0}
-            sleepPerformance={89}
-            hrv={todayData?.hrv || 0}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <DailyOverview 
+                recovery={todayData?.recovery || 0}
+                strain={todayData?.strain || 0}
+                sleepPerformance={89}
+                hrv={todayData?.hrv || 0}
+              />
+            </div>
+            <div>
+              <MyDay 
+                sleepDuration="8:15"
+                sleepTime="11:58 PM"
+                wakeTime="8:38 AM"
+              />
+            </div>
+          </div>
 
-          <MyDay 
-            sleepDuration="8:15"
-            sleepTime="11:58 PM"
-            wakeTime="8:38 AM"
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StrainChart data={weeklyData} />
+            <HrvTimeline data={weeklyData.map(day => ({
+              date: day.date,
+              hrv: day.hrv || Math.round(Math.random() * 50 + 40)
+            }))} />
+          </div>
 
           <WeeklyOverview data={weeklyData} />
         </div>
@@ -73,3 +89,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

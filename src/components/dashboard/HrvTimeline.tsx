@@ -2,7 +2,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { cn } from "@/lib/utils";
 
 interface HrvTimelineProps {
   data: Array<{
@@ -18,36 +17,39 @@ const HrvTimeline: React.FC<HrvTimelineProps> = ({ data }) => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>HRV Timeline</CardTitle>
+    <Card className="bg-whoop-black/80 backdrop-blur-sm border-whoop-white/10">
+      <CardHeader className="px-6 pt-6 pb-2">
+        <CardTitle className="flex justify-between items-center uppercase tracking-whoop text-whoop-white">
+          <span>HRV Timeline</span>
+        </CardTitle>
+        <p className="text-xs text-whoop-white/50 mt-1">7-Day Heart Rate Variability</p>
       </CardHeader>
-      <CardContent>
-        <div className="h-[300px] w-full">
+      <CardContent className="p-2">
+        <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
               <XAxis 
                 dataKey="date" 
                 tickFormatter={formatDate}
-                stroke="#888888"
-                fontSize={12}
+                stroke="#FFFFFF33"
+                tick={{ fill: "#FFFFFF99", fontSize: 12 }}
               />
               <YAxis
-                stroke="#888888"
-                fontSize={12}
+                stroke="#FFFFFF33"
+                tick={{ fill: "#FFFFFF99", fontSize: 12 }}
                 tickFormatter={(value) => `${value}ms`}
               />
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     return (
-                      <div className="rounded-lg border bg-background p-2 shadow-sm">
-                        <div className="grid grid-cols-2 gap-2">
-                          <span className="font-medium">Date:</span>
-                          <span>{formatDate(payload[0].payload.date)}</span>
-                          <span className="font-medium">HRV:</span>
-                          <span>{payload[0].value}ms</span>
-                        </div>
+                      <div className="bg-whoop-black p-3 border border-whoop-white/10 rounded-md shadow-lg">
+                        <p className="font-sans uppercase tracking-whoop text-whoop-white mb-1">
+                          {formatDate(payload[0].payload.date)}
+                        </p>
+                        <p className="text-sm text-whoop-white/70">
+                          HRV: <span className="font-din font-bold text-whoop-white">{payload[0].value}ms</span>
+                        </p>
                       </div>
                     );
                   }
@@ -57,9 +59,9 @@ const HrvTimeline: React.FC<HrvTimelineProps> = ({ data }) => {
               <Line
                 type="monotone"
                 dataKey="hrv"
-                stroke="#8884d8"
+                stroke="#00F19F"
                 strokeWidth={2}
-                dot={{ fill: '#8884d8', r: 4 }}
+                dot={{ fill: '#00F19F', r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>
