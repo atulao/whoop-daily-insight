@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -65,49 +64,51 @@ const SleepConsistency: React.FC<SleepConsistencyProps> = ({ sleepData }) => {
   };
   
   const consistencyStreak = calculateStreak();
-  
+
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden">
+      <CardHeader className="space-y-0 pb-4">
         <CardTitle className="flex justify-between items-center">
-          <span>Sleep Consistency</span>
-          <Badge variant="outline" className="flex gap-1 items-center">
+          <span className="text-xl font-semibold">Sleep Consistency</span>
+          <Badge variant="outline" className="flex gap-1.5 items-center py-1 px-3">
             <Bed className="h-4 w-4" />
             {consistencyStreak > 0 ? `${consistencyStreak} Day Streak` : "No Current Streak"}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-2">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col items-center justify-center p-4 bg-secondary/50 rounded-lg">
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary/20">
             <p className="text-sm text-muted-foreground mb-1">Target Bedtime</p>
             <p className="text-2xl font-bold">{medianSleepStart}</p>
-            <p className="text-xs text-muted-foreground mt-2">Based on your 14-day median</p>
+            <p className="text-xs text-muted-foreground mt-1">14-day median</p>
           </div>
           
-          <div className="flex flex-col items-center justify-center p-4 bg-secondary/50 rounded-lg">
+          <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary/20">
             <p className="text-sm text-muted-foreground mb-1">Target Wake Time</p>
             <p className="text-2xl font-bold">{medianWakeTime}</p>
-            <p className="text-xs text-muted-foreground mt-2">Based on your 14-day median</p>
+            <p className="text-xs text-muted-foreground mt-1">14-day median</p>
           </div>
         </div>
         
-        <div className="mt-4">
-          <h3 className="font-semibold mb-2">Recent Sleep Pattern</h3>
+        <div>
+          <h3 className="text-sm font-medium mb-3">Recent Sleep Pattern</h3>
           <div className="overflow-x-auto">
-            <div className="flex gap-1 min-w-max">
-              {recentSleepData.map((day, index) => (
+            <div className="flex gap-2 min-w-max">
+              {recentSleepData.map((day) => (
                 <div 
                   key={day.date}
                   className="flex flex-col items-center"
                 >
                   <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center",
-                    day.consistency === 'consistent' ? 'bg-whoop-green text-white' : 'bg-whoop-red text-white'
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
+                    day.consistency === 'consistent' 
+                      ? 'bg-whoop-green text-white' 
+                      : 'bg-whoop-red text-white'
                   )}>
                     {new Date(day.date).getDate()}
                   </div>
-                  <span className="text-xs mt-1">
+                  <span className="text-xs mt-1.5 text-muted-foreground">
                     {new Date(day.date).toLocaleDateString(undefined, { weekday: 'short' })}
                   </span>
                 </div>
@@ -115,10 +116,10 @@ const SleepConsistency: React.FC<SleepConsistencyProps> = ({ sleepData }) => {
             </div>
           </div>
           
-          <div className="mt-4 text-sm text-muted-foreground">
+          <div className="mt-6 text-sm text-muted-foreground border-t pt-4">
             <p>
               Sticking to a consistent sleep schedule helps optimize your recovery.
-              Go to bed within ±30 minutes of your target bedtime.
+              Aim to go to bed within ±30 minutes of your target bedtime.
             </p>
           </div>
         </div>
