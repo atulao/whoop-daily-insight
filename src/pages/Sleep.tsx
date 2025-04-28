@@ -311,7 +311,7 @@ const Sleep = () => {
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center">
-                      {metric.icon}
+                    {metric.icon}
                       <span className="ml-2 text-xs font-medium uppercase tracking-whoop text-whoop-white/70">
                         {metric.label}
                       </span>
@@ -336,8 +336,8 @@ const Sleep = () => {
                     {metric.value}
                   </h3>
                   <p className={`text-sm font-medium ${metric.descriptionColor || 'text-whoop-white/70'}`}>
-                    {metric.description}
-                  </p>
+                      {metric.description}
+                    </p>
                 </div>
               </CardContent>
             </Card>
