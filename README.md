@@ -5,7 +5,7 @@ This is a web application designed to connect to your WHOOP account and display 
 ## Features
 
 *   **Secure WHOOP Connection:** Connects to the official WHOOP API using OAuth 2.0 with PKCE for enhanced security.
-*   **Data Visualization:** Displays key WHOOP metrics, including:
+*   **Dashboard Overview:** Displays key WHOOP metrics, including:
     *   Daily Recovery score
     *   Daily Strain score
     *   Sleep Performance (calculated based on duration vs. need)
@@ -13,9 +13,19 @@ This is a web application designed to connect to your WHOOP account and display 
     *   7-Day Strain vs. Recovery visualization
     *   HRV timeline for the past week
     *   Weekly overview with averages
+*   **Enhanced Sleep Analytics:**
+    *   Last Night's Sleep summary with key metrics
+    *   Sleep Debt Tracker with color-coded visualization
+    *   Sleep Time Tracker showing sleep duration trends
+    *   Bedtime Tracker for consistency analysis
+    *   Sleep Stage distribution (REM, Deep, Light)
+    *   Sleep Efficiency and Respiratory Rate monitoring
+    *   Sleep Consistency patterns
+    *   Sleep Coaching Tips based on your data
 *   **WHOOP-Inspired UI:** Uses a dark theme and styling inspired by the WHOOP app, built with React, TypeScript, Tailwind CSS, and Shadcn UI.
 *   **Data Fetching:** Uses TanStack Query (React Query) for efficient data fetching, caching, and state management.
 *   **Robust Error Handling:** Includes comprehensive error checking and fallbacks for data processing and visualization.
+*   **Responsive Design:** Optimized for both desktop and mobile viewing experiences.
 
 ## Getting Started
 
@@ -75,6 +85,26 @@ npm run dev
 ```
 
 Navigate to `http://localhost:8080` to view your dashboard.
+
+## Key Components
+
+The application features several specialized components for data visualization:
+
+### Dashboard Components
+- **Recovery Card:** Shows your daily recovery score with color-coded indicators
+- **Strain Card:** Displays your daily strain level with activity breakdown
+- **Sleep Card:** Summarizes your sleep performance with duration and quality metrics
+
+### Sleep Analysis Components
+- **Last Night Sleep:** Provides a quick overview of your most recent sleep session
+- **Sleep Stage Chart:** Visualizes your sleep cycle distribution (REM, Deep, Light, Awake)
+- **Sleep Debt Tracker:** Color-coded visualization of your sleep debt/surplus over time
+- **Sleep Time Tracker:** Tracks your total sleep duration compared to your sleep needs
+- **Bedtime Tracker:** Analyzes your sleep schedule consistency
+- **Sleep Efficiency:** Monitors how efficiently you sleep while in bed
+- **Respiratory Rate Chart:** Tracks breathing patterns during sleep
+- **Recovery Impact:** Shows how sleep quality affects recovery potential
+- **Sleep Consistency:** Visualizes sleep and wake time patterns
 
 ## API Integration Notes
 

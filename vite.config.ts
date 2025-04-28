@@ -39,6 +39,25 @@ export default defineConfig(({ mode }) => ({
           proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('Received Response from:', req.url, proxyRes.statusCode);
             
+            // Enhanced response logging
+            if (req.url?.includes('/developer')) {
+              const chunks: Buffer[] = [];
+              proxyRes.on('data', (chunk) => {
+                chunks.push(chunk);
+              });
+              proxyRes.on('end', () => {
+                try {
+                  // Only attempt to log if we have successful responses
+                  if (proxyRes.statusCode && proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+                    const body = Buffer.concat(chunks).toString('utf8');
+                    console.log('Response body preview:', body.substring(0, 300) + (body.length > 300 ? '...' : ''));
+                  }
+                } catch (e) {
+                  console.error('Error logging response body:', e);
+                }
+              });
+            }
+            
             // For debugging CORS issues
             if (proxyRes.statusCode && proxyRes.statusCode >= 400) {
               console.log('Error response headers:', proxyRes.headers);
@@ -53,7 +72,11 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' &&
-    componentTagger(),
+    componentTagger({
+      prefix: "div",
+      devServerName: "localhost",
+      devServerPort: 8080,
+    }),
   ].filter(Boolean),
   resolve: {
     alias: {

@@ -8,6 +8,9 @@ const WHOOP_TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token';
 const PROXIED_WHOOP_TOKEN_URL = '/oauth-proxy/oauth/oauth2/token';
 const PROXIED_WHOOP_API_BASE_URL = '/oauth-proxy/developer';
 
+// Debug flags
+const DEBUG_MODE = true;
+
 // Types for WHOOP API responses
 export interface WhoopUser {
   user_id: string;
@@ -390,14 +393,56 @@ export class WhoopService {
 
     try {
       console.log(`[DEBUG] Making API request to: ${PROXIED_WHOOP_API_BASE_URL}${endpoint}`);
+      
+      // Print out the full URL and authorization token (partially masked)
+      if (DEBUG_MODE) {
+        const tokenPreview = this.authState.accessToken ? 
+          `${this.authState.accessToken.substring(0, 10)}...${this.authState.accessToken.substring(this.authState.accessToken.length - 5)}` : 
+          'none';
+        console.log(`[DEBUG] Full request URL: ${PROXIED_WHOOP_API_BASE_URL}${endpoint}`);
+        console.log(`[DEBUG] Using auth token: ${tokenPreview}`);
+      }
+      
       const response = await axios.get(`${PROXIED_WHOOP_API_BASE_URL}${endpoint}`, {
         headers: { 
           'Authorization': `Bearer ${this.authState.accessToken}` 
         }
       });
+      
+      // Log successful response summary
+      if (DEBUG_MODE) {
+        // Log the structure of the response without all the data
+        const responsePreview = { 
+          status: response.status,
+          hasData: !!response.data,
+          dataType: typeof response.data,
+          isArray: Array.isArray(response.data),
+          recordCount: response.data?.records ? response.data.records.length : 'N/A'
+        };
+        console.log(`[DEBUG] API response summary:`, responsePreview);
+      }
+      
       return response.data;
     } catch (error) {
-      console.error('WHOOP API request failed:', error);
+      // Enhanced error logging
+      console.error('[ERROR] WHOOP API request failed:', endpoint);
+      
+      if (axios.isAxiosError(error)) {
+        // Log more details about the error
+        console.error(`[ERROR] Status: ${error.response?.status}`);
+        console.error(`[ERROR] Status text: ${error.response?.statusText}`);
+        console.error(`[ERROR] Response data:`, error.response?.data);
+        
+        // Check for specific error conditions
+        if (error.response?.status === 403) {
+          console.error('[ERROR] Possible permission issue. Check that your WHOOP account has this data available and your app has the correct scopes.');
+        } else if (error.response?.status === 404) {
+          console.error('[ERROR] Endpoint not found. This might indicate the API has changed or the user does not have this data type available.');
+        }
+      } else {
+        console.error('[ERROR] Non-Axios error:', error);
+      }
+      
       // Check for 401 Unauthorized error and attempt refresh
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         console.log('Received 401, attempting token refresh...');
@@ -429,43 +474,138 @@ export class WhoopService {
   // Get recent recovery data
   public async getRecovery(days: number = 7): Promise<WhoopRecovery[]> {
     const endDate = new Date();
+    // Start from beginning of current day to ensure we get today's data
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
     
     const start = startDate.toISOString();
     const end = endDate.toISOString();
     
-    // Call the recovery collection endpoint
+    // Request specific ordering to get most recent data first
+    console.log(`[INFO] Fetching recovery data from ${start} to ${end}`);
     const response = await this.apiRequest<{records: WhoopRecovery[]}>(`/v1/recovery?start=${start}&end=${end}`);
-    return response.records || [];
+    
+    // Sort by date (most recent first) and ensure we have the latest data
+    const records = response.records || [];
+    records.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    console.log(`[INFO] Fetched ${records.length} recovery records`);
+    
+    // Extract and log the recovery scores for easier debugging
+    const recoveryScores = records.map(r => ({
+      date: new Date(r.created_at).toLocaleString(),
+      score: r.score?.recovery_score,
+      hrv: r.score?.hrv_rmssd_milli,
+      hasScore: !!r.score
+    }));
+    console.log('[DEBUG] Recovery scores by date:', recoveryScores);
+    
+    return records;
   }
 
   // Get recent strain data
   public async getStrain(days: number = 7): Promise<WhoopStrain[]> {
     const endDate = new Date();
+    // Start from beginning of current day to ensure we get today's data
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
     
     const start = startDate.toISOString();
     const end = endDate.toISOString();
     
-    // Call the cycle collection endpoint
+    console.log(`[INFO] Fetching strain data from ${start} to ${end}`);
     const response = await this.apiRequest<{records: WhoopStrain[]}>(`/v1/cycle?start=${start}&end=${end}`);
-    return response.records || [];
+    
+    // Sort by date (most recent first) and ensure we have the latest data
+    const records = response.records || [];
+    records.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    console.log(`[INFO] Fetched ${records.length} strain records`);
+    
+    // Extract and log the strain scores for easier debugging
+    const strainScores = records.map(r => ({
+      date: new Date(r.created_at).toLocaleString(),
+      score: r.score?.strain,
+      hasScore: !!r.score
+    }));
+    console.log('[DEBUG] Strain scores by date:', strainScores);
+    
+    return records;
   }
 
   // Get recent sleep data
   public async getSleep(days: number = 7): Promise<WhoopSleep[]> {
     const endDate = new Date();
+    // Add one day to endDate to ensure we get today's data and any pending/projected data
+    endDate.setDate(endDate.getDate() + 1);
+    
+    // Start from beginning of current day minus requested days
     const startDate = new Date();
-    startDate.setDate(endDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
     
     const start = startDate.toISOString();
     const end = endDate.toISOString();
     
-    // Call the sleep collection endpoint
+    console.log(`[INFO] Fetching sleep data from ${start} to ${end}`);
     const response = await this.apiRequest<{records: WhoopSleep[]}>(`/v1/activity/sleep?start=${start}&end=${end}`);
-    return response.records || [];
+    
+    // Sort by date (most recent first) and ensure we have the latest data
+    const records = response.records || [];
+    records.sort((a, b) => new Date(b.end || b.created_at).getTime() - new Date(a.end || a.created_at).getTime());
+    
+    console.log(`[INFO] Fetched ${records.length} sleep records`);
+    
+    // Extract and log the sleep scores and dates for easier debugging
+    const sleepDetails = records.map(r => ({
+      date: new Date(r.end || r.created_at).toLocaleString(),
+      created: new Date(r.created_at).toLocaleString(),
+      start: r.start ? new Date(r.start).toLocaleString() : 'N/A',
+      end: r.end ? new Date(r.end).toLocaleString() : 'N/A',
+      performance: r.score?.sleep_performance_percentage,
+      hasScore: !!r.score
+    }));
+    console.log('[DEBUG] Sleep records by date:', sleepDetails);
+    
+    return records;
+  }
+  
+  // Force refresh all data
+  public async refreshAllData(): Promise<{
+    profile: WhoopUser | null,
+    recovery: WhoopRecovery[] | null,
+    strain: WhoopStrain[] | null,
+    sleep: WhoopSleep[] | null
+  }> {
+    console.log('[INFO] Manually refreshing all WHOOP data');
+    try {
+      // Clear React Query cache or other caching mechanisms
+      // Note: Implementation depends on your caching strategy
+      
+      // Fetch fresh data (with cache busting if needed)
+      const today = new Date();
+      const cacheBuster = `&_cb=${today.getTime()}`;
+      
+      // Make requests with fresh timestamp to bypass any caching
+      const profile = await this.apiRequest<WhoopUser>(`/v1/user/profile/basic?${cacheBuster}`);
+      const recovery = await this.getRecovery(7);
+      const strain = await this.getStrain(7);
+      const sleep = await this.getSleep(7);
+      
+      console.log('[INFO] Data refresh completed successfully');
+      
+      return {
+        profile,
+        recovery,
+        strain,
+        sleep
+      };
+    } catch (error) {
+      console.error('[ERROR] Failed to refresh data:', error);
+      throw error;
+    }
   }
 }
 

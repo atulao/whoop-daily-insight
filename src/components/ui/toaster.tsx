@@ -17,9 +17,9 @@ export function Toaster() {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
+              {title && <ToastTitle className="text-lg font-bold">{title}</ToastTitle>}
               {description && (
-                <ToastDescription>{description}</ToastDescription>
+                <ToastDescription className="text-sm opacity-90">{description}</ToastDescription>
               )}
             </div>
             {action}
@@ -27,7 +27,7 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport />
+      <ToastViewport className="p-6 md:p-8 fixed bottom-0 right-0 flex flex-col gap-2 w-full max-w-md z-[100]" />
     </ToastProvider>
   )
 }
