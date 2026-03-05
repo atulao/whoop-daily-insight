@@ -14,9 +14,30 @@ serve(async (req) => {
   }
 
   try {
-    const { grant_type, code, redirect_uri, code_verifier, client_id, refresh_token } = await req.json();
+    const body = await req.json();
+    const { action } = body;
+
+    // Return Client ID for OAuth URL construction (kept server-side for cleanliness)
+    if (action === "get_client_id") {
+      const WHOOP_CLIENT_ID = Deno.env.get("WHOOP_CLIENT_ID");
+      if (!WHOOP_CLIENT_ID) {
+        return new Response(
+          JSON.stringify({ error: "WHOOP_CLIENT_ID is not configured" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(
+        JSON.stringify({ client_id: WHOOP_CLIENT_ID }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Token exchange
+    const { grant_type, code, redirect_uri, code_verifier, client_id, refresh_token } = body;
 
     const WHOOP_CLIENT_SECRET = Deno.env.get("WHOOP_CLIENT_SECRET");
+    const WHOOP_CLIENT_ID = Deno.env.get("WHOOP_CLIENT_ID");
+    
     if (!WHOOP_CLIENT_SECRET) {
       return new Response(
         JSON.stringify({ error: "WHOOP_CLIENT_SECRET is not configured" }),
@@ -24,10 +45,12 @@ serve(async (req) => {
       );
     }
 
-    // Build the token request body
+    // Use the server-side client_id if not provided
+    const effectiveClientId = client_id || WHOOP_CLIENT_ID;
+
     const tokenBody: Record<string, string> = {
       grant_type,
-      client_id,
+      client_id: effectiveClientId,
       client_secret: WHOOP_CLIENT_SECRET,
     };
 

@@ -1,25 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWhoopAuth } from '@/contexts/WhoopAuthContext';
-import { Loader2, AlertTriangle, Lock } from 'lucide-react';
-import { whoopService } from '@/services/whoopService';
+import { Loader2, Lock, CheckCircle } from 'lucide-react';
 
 export const WhoopLoginForm: React.FC = () => {
   const { isAuthenticated, isLoading, user, login, logout } = useWhoopAuth();
-  const clientIdConfigured = whoopService.getClientId() !== 'whoop-client-id-placeholder' && whoopService.getClientId() !== '';
-
-  const handleLogin = async () => {
-    if (!clientIdConfigured) {
-      alert('Please configure your WHOOP Client ID first');
-      return;
-    }
-    try {
-      await login();
-    } catch (error) {
-      console.error('Login error:', error);
-    }
-  };
 
   return (
     <Card className="w-full max-w-md mx-auto bg-whoop-black backdrop-blur-sm border border-whoop-white/10 rounded-lg shadow-lg overflow-hidden">
@@ -34,6 +19,10 @@ export const WhoopLoginForm: React.FC = () => {
       <CardContent className="p-6">
         {isAuthenticated && user ? (
           <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle className="h-5 w-5 text-whoop-teal" />
+              <span className="text-whoop-teal font-medium text-sm">Connected</span>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-whoop-white/50">Name</p>
@@ -44,16 +33,6 @@ export const WhoopLoginForm: React.FC = () => {
                 <p className="font-sans text-whoop-white">{user.email}</p>
               </div>
             </div>
-          </div>
-        ) : !clientIdConfigured ? (
-          <div className="text-center py-6">
-            <AlertTriangle className="h-12 w-12 text-whoop-recovery-low mx-auto mb-2" />
-            <p className="text-whoop-white/70 mb-4">
-              You need to configure your WHOOP Client ID before connecting
-            </p>
-            <p className="text-xs text-whoop-white/50">
-              Use the "Configure API" button at the top of this page
-            </p>
           </div>
         ) : (
           <div className="text-center py-4">
@@ -78,8 +57,8 @@ export const WhoopLoginForm: React.FC = () => {
           </button>
         ) : (
           <button 
-            onClick={handleLogin} 
-            disabled={isLoading || !clientIdConfigured} 
+            onClick={() => login()} 
+            disabled={isLoading} 
             className="w-full bg-whoop-teal text-whoop-black rounded-md py-3 px-4 font-sans font-semibold uppercase tracking-whoop text-sm hover:brightness-110 transition-all duration-200 disabled:opacity-70"
           >
             {isLoading ? (
