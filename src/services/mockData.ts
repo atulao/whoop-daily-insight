@@ -1,12 +1,11 @@
 
 // Mock data service to simulate WHOOP API responses
-// This would be replaced with actual API calls in production
+// Used as fallback when not authenticated with WHOOP
+
+import { WhoopRecovery, WhoopStrain, WhoopSleep } from './whoopService';
 
 // Helper to generate random number in range
 const randomInRange = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-// Generate a random recovery score between 0-100
-const generateRecoveryScore = (): number => randomInRange(20, 98);
 
 // Return a recovery zone based on score
 export const getRecoveryZone = (score: number): 'green' | 'yellow' | 'red' => {
@@ -17,91 +16,84 @@ export const getRecoveryZone = (score: number): 'green' | 'yellow' | 'red' => {
 
 // Calculate recommended strain target based on recovery
 export const getStrainTarget = (recoveryScore: number): { min: number; max: number } => {
-  if (recoveryScore >= 67) {
-    return { min: 12, max: 15 };
-  } else if (recoveryScore >= 34) {
-    return { min: 8, max: 11 };
-  } else {
-    return { min: 3, max: 7 };
-  }
+  if (recoveryScore >= 67) return { min: 12, max: 15 };
+  if (recoveryScore >= 34) return { min: 8, max: 11 };
+  return { min: 3, max: 7 };
 };
 
-// Generate 7 days worth of recovery and strain data
-export const generateWeeklyData = () => {
+// Generate mock recovery data matching WhoopRecovery interface
+export const generateMockRecovery = (days: number = 7): WhoopRecovery[] => {
   const today = new Date();
-  const data = [];
-  
-  for (let i = 6; i >= 0; i--) {
+  const data: WhoopRecovery[] = [];
+
+  for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    
-    const recovery = generateRecoveryScore();
-    const strainTarget = getStrainTarget(recovery);
-    const actualStrain = randomInRange(
-      Math.max(1, strainTarget.min - 5),
-      Math.min(21, strainTarget.max + 5)
-    );
-    
+
     data.push({
+      score: randomInRange(20, 98),
+      restingHeartRate: randomInRange(48, 68),
+      hrvMs: randomInRange(35, 120),
       date: date.toISOString().split('T')[0],
-      recovery,
-      recoveryZone: getRecoveryZone(recovery),
-      strainTarget,
-      actualStrain,
-      capacity: recovery / 10, // Simplified calculation for capacity
     });
   }
-  
+
   return data;
 };
 
-// Generate sleep consistency data
-export const generateSleepData = () => {
+// Generate mock strain data matching WhoopStrain interface
+export const generateMockStrain = (days: number = 7): WhoopStrain[] => {
   const today = new Date();
-  const data = [];
-  
-  // Base sleep time - around 11:00 PM
-  const baseSleepTime = 23 * 60; // 11:00 PM in minutes
-  // Base wake time - around 7:00 AM
-  const baseWakeTime = 7 * 60; // 7:00 AM in minutes
-  
-  for (let i = 13; i >= 0; i--) {
+  const data: WhoopStrain[] = [];
+
+  for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    
-    // Vary sleep start time by ±30 minutes
-    const sleepStartVariation = randomInRange(-30, 30);
-    const sleepStart = baseSleepTime + sleepStartVariation;
-    
-    // Vary sleep duration between 6-9 hours (in minutes)
-    const sleepDuration = randomInRange(6 * 60, 9 * 60);
-    
-    // Calculate wake time
-    const wakeTime = sleepStart + sleepDuration;
-    
-    // Format times as HH:MM
-    const formatTime = (minutes: number) => {
-      const h = Math.floor((minutes % (24 * 60)) / 60);
-      const m = minutes % 60;
-      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-    };
-    
+
     data.push({
+      score: parseFloat((randomInRange(30, 180) / 10).toFixed(1)),
+      averageHeartRate: randomInRange(85, 145),
+      maxHeartRate: randomInRange(150, 195),
+      kilojoules: randomInRange(5000, 15000),
       date: date.toISOString().split('T')[0],
-      sleepStart: formatTime(sleepStart),
-      wakeTime: formatTime(wakeTime % (24 * 60)), // Ensure we wrap around 24 hours
-      duration: sleepDuration / 60, // in hours
-      efficiency: randomInRange(75, 98),
-      consistency: Math.abs(sleepStartVariation) <= 15 ? 'consistent' : 'inconsistent',
     });
   }
-  
+
   return data;
 };
 
-// Today's data
+// Generate mock sleep data matching WhoopSleep interface
+export const generateMockSleep = (days: number = 7): WhoopSleep[] => {
+  const today = new Date();
+  const data: WhoopSleep[] = [];
+
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+
+    const sleepNeed = randomInRange(25200, 30600); // 7-8.5 hrs in seconds
+    const qualityDuration = randomInRange(21600, 32400); // 6-9 hrs in seconds
+
+    data.push({
+      id: `mock-sleep-${i}`,
+      state: 'complete',
+      scoreState: 'SCORED',
+      qualityDuration,
+      respiratoryRate: parseFloat((randomInRange(140, 180) / 10).toFixed(1)),
+      sleepNeed,
+      date: date.toISOString().split('T')[0],
+    });
+  }
+
+  return data;
+};
+
+// Legacy exports for backward compatibility
+export const generateWeeklyData = generateMockRecovery;
+export const generateSleepData = generateMockSleep;
+
 export const getTodayData = () => {
-  const recovery = generateRecoveryScore();
+  const recovery = randomInRange(20, 98);
   return {
     date: new Date().toISOString().split('T')[0],
     recovery,
@@ -114,16 +106,14 @@ export const getTodayData = () => {
 };
 
 // User profile data
-export const getUserProfile = () => {
-  return {
-    name: "Alex Johnson",
-    email: "alex@example.com",
-    memberSince: "2023-04-10",
-    units: "imperial",
-    notifications: {
-      morningReadiness: true,
-      bedtimeReminder: true,
-      strainAlerts: true,
-    },
-  };
-};
+export const getUserProfile = () => ({
+  name: "Alex Johnson",
+  email: "alex@example.com",
+  memberSince: "2023-04-10",
+  units: "imperial",
+  notifications: {
+    morningReadiness: true,
+    bedtimeReminder: true,
+    strainAlerts: true,
+  },
+});

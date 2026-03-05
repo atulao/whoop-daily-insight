@@ -240,7 +240,7 @@ const Connect = () => {
 
                 <TabsContent value="scopes" className="p-6">
                   <div className="space-y-6">
-                    <Alert variant="outline" className="bg-black/30 border-whoop-white/20">
+                    <Alert className="bg-black/30 border-whoop-white/20">
                       <InfoIcon className="h-4 w-4 text-whoop-teal" />
                       <AlertTitle className="text-whoop-white">Understanding WHOOP API Scopes</AlertTitle>
                       <AlertDescription className="text-whoop-white/70">
