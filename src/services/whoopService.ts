@@ -1,9 +1,9 @@
 import axios from 'axios';
+import { supabase } from '@/integrations/supabase/client';
 
 // WHOOP API constants
 const WHOOP_API_BASE_URL = 'https://api.prod.whoop.com/developer';
 const WHOOP_AUTH_URL = 'https://api.prod.whoop.com/oauth/oauth2/auth';
-const WHOOP_TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token';
 
 // Types for WHOOP API responses
 export interface WhoopUser {
@@ -193,19 +193,28 @@ export class WhoopService {
     }
 
     try {
-      const response = await axios.post(WHOOP_TOKEN_URL, {
-        client_id: this.config.clientId,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: this.config.redirectUri,
-        code_verifier: storedVerifier
+      const { data: responseData, error: fnError } = await supabase.functions.invoke("whoop-token-exchange", {
+        body: {
+          grant_type: 'authorization_code',
+          client_id: this.config.clientId,
+          code,
+          redirect_uri: this.config.redirectUri,
+          code_verifier: storedVerifier,
+        },
       });
+
+      if (fnError) {
+        console.error('Token exchange edge function error:', fnError);
+        localStorage.removeItem('pkce_verifier');
+        localStorage.removeItem('pkce_state');
+        return false;
+      }
 
       this.authState = {
         isAuthenticated: true,
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
-        expiresAt: Date.now() + response.data.expires_in * 1000,
+        accessToken: responseData.access_token,
+        refreshToken: responseData.refresh_token,
+        expiresAt: Date.now() + responseData.expires_in * 1000,
       };
 
       this.saveAuthStateToLocalStorage();
@@ -233,18 +242,24 @@ export class WhoopService {
     }
 
     try {
-      const response = await axios.post(WHOOP_TOKEN_URL, {
-        grant_type: 'refresh_token',
-        refresh_token: this.authState.refreshToken,
-        client_id: this.config.clientId, // Client ID might be required by WHOOP
+      const { data: responseData, error: fnError } = await supabase.functions.invoke("whoop-token-exchange", {
+        body: {
+          grant_type: 'refresh_token',
+          refresh_token: this.authState.refreshToken,
+          client_id: this.config.clientId,
+        },
       });
+
+      if (fnError) {
+        throw new Error('Token refresh failed');
+      }
 
       this.authState = {
         ...this.authState,
         isAuthenticated: true,
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token || this.authState.refreshToken, // Keep old if new one isn't provided
-        expiresAt: Date.now() + response.data.expires_in * 1000,
+        accessToken: responseData.access_token,
+        refreshToken: responseData.refresh_token || this.authState.refreshToken,
+        expiresAt: Date.now() + responseData.expires_in * 1000,
       };
 
       this.saveAuthStateToLocalStorage();
