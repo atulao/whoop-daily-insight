@@ -1,6 +1,7 @@
 
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import DailyOverview from "@/components/dashboard/DailyOverview";
 import MyDay from "@/components/dashboard/MyDay";
@@ -9,31 +10,25 @@ import StrainChart from "@/components/dashboard/StrainChart";
 import HrvTimeline from "@/components/dashboard/HrvTimeline";
 import { whoopService } from "@/services/whoopService";
 import { useWhoopAuth } from "@/contexts/WhoopAuthContext";
-import { generateMockRecovery, generateMockStrain, generateMockSleep } from "@/services/mockData";
-import { Badge } from "@/components/ui/badge";
+import { Zap } from "lucide-react";
 
 const Dashboard = () => {
   const { isAuthenticated } = useWhoopAuth();
+  const navigate = useNavigate();
 
-  // Mock data (stable references via useMemo)
-  const mockRecovery = React.useMemo(() => generateMockRecovery(7), []);
-  const mockStrain = React.useMemo(() => generateMockStrain(7), []);
-  const mockSleep = React.useMemo(() => generateMockSleep(7), []);
-
-  // Live API queries — only enabled when authenticated
-  const { data: liveRecovery, isLoading: loadingRecovery } = useQuery({
+  const { data: recoveryData, isLoading: loadingRecovery } = useQuery({
     queryKey: ["whoopRecovery7"],
     queryFn: () => whoopService.getRecovery(7),
     enabled: isAuthenticated,
   });
 
-  const { data: liveStrain, isLoading: loadingStrain } = useQuery({
+  const { data: strainData, isLoading: loadingStrain } = useQuery({
     queryKey: ["whoopStrain7"],
     queryFn: () => whoopService.getStrain(7),
     enabled: isAuthenticated,
   });
 
-  const { data: liveSleep, isLoading: loadingSleep } = useQuery({
+  const { data: sleepData, isLoading: loadingSleep } = useQuery({
     queryKey: ["whoopSleep7"],
     queryFn: () => whoopService.getSleep(7),
     enabled: isAuthenticated,
@@ -41,19 +36,39 @@ const Dashboard = () => {
 
   const loading = isAuthenticated && (loadingRecovery || loadingStrain || loadingSleep);
 
-  // Use live data when authenticated, otherwise use mock data
-  const recoveryData = isAuthenticated ? liveRecovery : mockRecovery;
-  const strainData = isAuthenticated ? liveStrain : mockStrain;
-  const sleepData = isAuthenticated ? liveSleep : mockSleep;
+  // Not authenticated — show connect prompt
+  if (!isAuthenticated) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+          <div className="text-center space-y-6 max-w-md px-4">
+            <div className="h-20 w-20 rounded-full border-2 border-border flex items-center justify-center mx-auto">
+              <Zap className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold uppercase tracking-whoop text-foreground">Connect Your WHOOP</h2>
+            <p className="text-muted-foreground">
+              Link your WHOOP account to see your real strain, recovery, and sleep data here.
+            </p>
+            <button
+              onClick={() => navigate('/connect')}
+              className="bg-primary text-primary-foreground rounded-xl py-3 px-8 font-semibold text-sm uppercase tracking-whoop hover:brightness-110 transition-all duration-200"
+            >
+              Connect Now
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   if (loading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
-            <div className="animate-pulse-glow w-16 h-16 bg-whoop-teal rounded-full mx-auto mb-4"></div>
-            <h2 className="text-2xl font-bold uppercase tracking-whoop text-whoop-white mb-2">Loading your insights...</h2>
-            <p className="text-whoop-white/70">Fetching live data from WHOOP</p>
+            <div className="animate-pulse-glow w-16 h-16 bg-primary rounded-full mx-auto mb-4"></div>
+            <h2 className="text-2xl font-bold uppercase tracking-whoop text-foreground mb-2">Loading your insights...</h2>
+            <p className="text-muted-foreground">Fetching live data from WHOOP</p>
           </div>
         </div>
       </MainLayout>
@@ -68,15 +83,8 @@ const Dashboard = () => {
     <MainLayout>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="py-6">
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold uppercase tracking-whoop text-whoop-white">Overview</h1>
-            {!isAuthenticated && (
-              <Badge variant="secondary" className="text-xs">
-                Demo Data
-              </Badge>
-            )}
-          </div>
-          <p className="text-sm text-whoop-white/70">
+          <h1 className="text-2xl font-bold uppercase tracking-whoop text-foreground mb-1">Overview</h1>
+          <p className="text-sm text-muted-foreground">
             {new Date().toLocaleDateString(undefined, { 
               weekday: 'long', 
               year: 'numeric', 
